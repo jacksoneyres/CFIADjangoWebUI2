@@ -1,0 +1,367 @@
+{% extends 'SilentD/base2.html' %}
+{% load staticfiles %}
+{% block navbar_miseq %} active {% endblock %}
+{% block body_block %}
+    <link href="{% static 'css/dataTables.bootstrap.css'%}" rel="stylesheet">
+    <link href="{% static 'css/dataTables.colVis.css'%}" rel="stylesheet">
+    <link href="{% static 'css/dataTables.tableTools.css'%}" rel="stylesheet">
+    <link href="{% static 'css/styles.css'%}" rel="stylesheet">
+
+    <script src="{% static 'js/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'js/dataTables.bootstrap.js' %}"></script>
+    <script src="{% static 'js/dataTables.colVis.js' %}"></script>
+    <script src="{% static 'js/dataTables.tableTools.js' %}"></script>
+
+    <style>
+        /*Author: Kosmom.ru*/
+        .loading,.loading>td,.loading>th,.nav li.loading.active>a,.pagination li.loading,.pagination>li.active.loading>a,.pager>li.loading>a{
+            background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, rgba(0, 0, 0, 0) 25%, rgba(0, 0, 0, 0) 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, rgba(0, 0, 0, 0) 75%, rgba(0, 0, 0, 0));
+            background-size: 40px 40px;
+            animation: 2s linear 0s normal none infinite progress-bar-stripes;
+            -webkit-animation: progress-bar-stripes 2s linear infinite;
+        }
+        .btn.btn-default.loading,input[type="text"].loading,select.loading,textarea.loading,.well.loading,.list-group-item.loading,.pagination>li.active.loading>a,.pager>li.loading>a{
+            background-image: linear-gradient(45deg, rgba(235, 235, 235, 0.15) 25%, rgba(0, 0, 0, 0) 25%, rgba(0, 0, 0, 0) 50%, rgba(235, 235, 235, 0.15) 50%, rgba(235, 235, 235, 0.15) 75%, rgba(0, 0, 0, 0) 75%, rgba(0, 0, 0, 0));
+        }
+    </style>
+    <section class="content-header">
+        <h1>
+            SPAdes Assembly Pipeline
+        </h1>
+
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+
+        <script>
+            $(document).ready(function() {
+                $('.input-group input[required], .input-group textarea[required], .input-group select[required]').on('focus change', function() {
+                    var $form = $(this).closest('form'),
+                            $group = $(this).closest('.input-group'),
+                            $addon = $group.find('.input-group-addon'),
+                            $icon = $addon.find('span'),
+                            state = false;
+
+                    if (!$group.data('validate')) {
+                        state = $(this).val() ? true : false;
+
+                    }else if ($group.data('validate') == "length") {
+                        var rows = document.querySelector('#forwardPrimer').value.split("\n").length;
+                        state = false;
+                        if (/^([AaCcGgTtWwSsMmKkRrYyBbDdHhVvNn \n])+$/.test($(this).val()) && $(this).val().split("\n").length == rows && $(this).val().length != 0) {
+                            state = true;
+                        }
+                    }else if ($group.data('validate') == "primer") {
+                        var rows = document.querySelector('#reversePrimer').value.split("\n").length;
+                        state = false;
+                        if (/^([AaCcGgTtWwSsMmKkRrYyBbDdHhVvNn \n])+$/.test($(this).val()) && $(this).val().split("\n").length == rows && $(this).val().length != 0) {
+                            state = true;
+                        }
+                    }else if ($group.data('validate') == "number") {
+                        state = !isNaN(parseFloat($(this).val())) && isFinite($(this).val()) && $(this).val() >= 0 && $(this).val() <= 10
+                    }
+
+                    if (state) {
+
+                        $addon.removeClass('danger');
+                        $addon.addClass('success');
+                        $icon.attr('class', 'glyphicon glyphicon-ok');
+                    }else{
+
+                        $addon.removeClass('success');
+                        $addon.addClass('danger');
+                        $icon.attr('class', 'glyphicon glyphicon-remove');
+                    }
+
+                    if ($form.find('.input-group-addon.danger').length == 0) {
+                        $('#click').prop('disabled', false);
+                        $('#click2').prop('disabled', false);
+                    }else{
+                        $('#click').prop('disabled', true);
+                        $('#click2').prop('disabled', true);
+                    }
+
+
+                });
+
+                $('.input-group input[required], .input-group textarea[required], .input-group select[required]').trigger('change');
+            });
+            $(document).on('change', '.btn-file :file', function() {
+                var input = $(this),
+                        numFiles = input.get(0).files ? input.get(0).files.length : 1,
+                        label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
+                input.trigger('fileselect', [numFiles, label]);
+            });
+
+            $(document).ready( function() {
+                $('#runinfo').on('fileselect', function (event, numFiles, label) {
+                    var input = $(this).parents('.input-group').find(':text'),
+                            log = numFiles > 1 ? numFiles + ' files selected' : label;
+                    var $group = $(this).closest('.input-group'),
+                            $addon = $group.find('.input-group-addon'),
+                            $icon = $addon.find('span');
+
+                    if (log.indexOf("RunInfo.xml") == -1) {
+                        input.val('Only RunInfo.xml Accepted');
+                        $addon.removeClass('success');
+                        $addon.addClass('danger');
+                        $icon.attr('class', 'glyphicon glyphicon-remove');
+                        //$('#submit').attr('disabled',true);
+                    } else {
+                        input.val(log);
+                        $addon.removeClass('danger');
+                        $addon.addClass('success');
+                        $icon.attr('class', 'glyphicon glyphicon-ok');
+                        //$('#submit').attr('disabled',false);
+                    }
+                });
+            });
+            $(document).ready( function() {
+                $('#SampleSheet').on('fileselect', function(event, numFiles, label) {
+                    var input = $(this).parents('.input-group').find(':text'),
+                            log = numFiles > 1 ? numFiles + ' files selected' : label;
+                    var $group = $(this).closest('.input-group'),
+                            $addon = $group.find('.input-group-addon'),
+                            $icon = $addon.find('span');
+
+                    if (log.indexOf("SampleSheet.csv") == -1) {
+                        input.val('Only SampleSheet.csv Accepted');
+                        $addon.removeClass('success');
+                        $addon.addClass('danger');
+                        $icon.attr('class', 'glyphicon glyphicon-remove');
+                        //$('#submit').attr('disabled',true);
+                    } else {
+                        input.val(log);
+                        $addon.removeClass('danger');
+                        $addon.addClass('success');
+                        $icon.attr('class', 'glyphicon glyphicon-ok');
+                        //$('#submit').attr('disabled',false);
+                    }
+                });
+            });
+            $(document).ready( function() {
+                $('#FASTQRun').on('fileselect', function(event, numFiles, label) {
+                    var input = $(this).parents('.input-group').find(':text'),
+                            log = numFiles > 1 ? numFiles + ' files selected' : label;
+                    var $group = $(this).closest('.input-group'),
+                            $addon = $group.find('.input-group-addon'),
+                            $icon = $addon.find('span');
+
+                    if (log.indexOf("GenerateFASTQRunStatistics.xml") == -1) {
+                        input.val('Only GenerateFASTQRunStatistics.xml Accepted');
+                        $addon.removeClass('success');
+                        $addon.addClass('danger');
+                        $icon.attr('class', 'glyphicon glyphicon-remove');
+                        //$('#submit').attr('disabled',true);
+                    } else {
+                        input.val(log);
+                        $addon.removeClass('danger');
+                        $addon.addClass('success');
+                        $icon.attr('class', 'glyphicon glyphicon-ok');
+                        //$('#submit').attr('disabled',false);
+                    }
+                });
+            });
+        </script>
+        <div class="row">
+            <div class="col-md-12">
+                <!-- Default box -->
+                <div class="box box-info">
+                    <div class="box-header">
+
+                    </div>
+                    <div class="box-body">
+                        <table id="files" class="table table-striped table-condensed">
+                            <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Date</th>
+                                <th>Files</th>
+                                <th>Results</th>
+                            </tr>
+                            </thead>
+
+                            <tbody>
+                            {% if projects %}
+                                {% for project in projects %}
+                                    <tr>
+                                        <td>{{ project.description }}</td>
+                                        <td>{{ project.date|date:"m-d-Y-P"  }}</td>
+                                        <td>{% for file in project.files.all %}
+                                            {{ file.name }}<br>
+                                        {% endfor %}</td>
+                                        <td>
+                                            {% if project.missing %}
+                                                <form style='float: left;' role="form" action="{% url "miseq" %}" method="post">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="missing" value="{{ project.id}}">
+                                                    <button type="submit" id="miss" class="btn btn-warning"><i class="fa fa-exclamation-triangle"></i> Missing Files</button>
+                                                </form>
+                                            {% else %}
+                                                {% if project.job_id == '1' %}
+                                                    <button type="button" id="AMR" class="btn btn-success loading" disabled>SPAdes Assembly Pipeline</button>
+                                                {% else %}
+                                                    {% if project.error != '' %}
+                                                        <button type="button" id="Error" class="btn btn-danger" disabled>Something Went Wrong</button>
+                                                    {% else %}
+                                                        {% if project.assemblies and project.reports %}
+                                                            <a href="{{ project.assemblies.url }}" class="btn btn-info"><i class="fa fa-fw fa-cloud-download"></i> Assemblies</a>
+                                                            <a href="{{ project.reports.url }}" class="btn btn-info"><i class="fa fa-fw fa-cloud-download"></i> Reports</a>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% endif %}
+
+                            </tbody>
+                        </table>
+                    </div><!-- /.box-body -->
+                </div><!-- /.box -->
+            </div><!-- /.col -->
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <!-- Default box -->
+                <div class="box box-info">
+                    <div class="box-header">
+                        <ul class="nav nav-tabs">
+                            <li class="nav active"><a href="#formtab1" data-toggle="tab">Create New SPAdes Project</a></li>
+                        </ul>
+                    </div>
+                    <div class="box-body">
+                        <!-- Tab panes -->
+                        {% if not post %}
+                            <div class="tab-content">
+                                <div class="tab-pane fade in active" id='formtab1'>
+                                    <h4>Step 1: Upload all paired end fastq.gz files Using File Upload.</h4>
+                                    <h4>Step 2: Upload RunInfo.xml, SampleSheet.csv and GenerateFASTQRunStatistics</h4>
+                                    Uploaded files will be matched with SampleSheet and SPAdes Pipeline will begin automatically<br><br>
+                                    <form id="MiSeqForm" action="{% url "miseq" %}" name='MiSeqForm' method="post" enctype="multipart/form-data" class="form-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="MiSeq" value="MiSeq">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" name="name" id="name" placeholder="Project Name" required>
+                                            <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                                        </div>
+                                        <div class="input-group">
+                                            <input id="uploadRunInfo" type="text" class="form-control" readonly value="Upload Genomes">
+                                    <span class="input-group-btn">
+                                        <span class="btn btn-primary btn-file">
+                                            <span class="glyphicon glyphicon-folder"></span>Browse&hellip; <input id="runinfo" type="file" name="runinfo" accept=".xml">
+                                        </span>
+                                    </span>
+                                            <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                                        </div>
+                                        <div class="input-group">
+                                            <input id="uploadSampleSheet" type="text" class="form-control" readonly value="Upload SampleSheet.csv">
+                                                <span class="input-group-btn">
+                                                    <span class="btn btn-primary btn-file">
+                                                        <span class="glyphicon glyphicon-folder"></span>Browse&hellip; <input id="SampleSheet" type="file" name="SampleSheet" accept=".csv">
+                                                    </span>
+                                                </span>
+                                            <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                                        </div>
+                                        <div class="input-group">
+                                            <input id="uploadFASTQSTATS" type="text" class="form-control" readonly value="Upload GenerateFASTQRunStatistics.xml">
+                                                <span class="input-group-btn">
+                                                    <span class="btn btn-primary btn-file">
+                                                        <span class="glyphicon glyphicon-folder"></span>Browse&hellip; <input id="FASTQRun" type="file" name="FASTQRun" accept=".xml">
+                                                    </span>
+                                                </span>
+                                            <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                                        </div>
+                                        <br>
+                                        <br>
+                                        <button type="button" id="click" class="btn btn-primary">Create</button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="tab-content">
+                                <div class="tab-pane fade in active" id='formtab1'>
+                                <h4>Step 3: Review Any Missing Files and Proceed To Assembly</h4>
+                                <h4>Files included for {{ miseq.description }}</h4>
+                                <hr>
+                                {% if documents %}
+                                    <table id="projects" class="table table-striped table-condensed">
+                                        <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>R1</th>
+                                            <th>R2</th>
+                                            <th>Found</th>
+                                        </tr>
+                                        </thead>
+
+                                        <tbody>
+
+                                        {% for document in documents %}
+                                            <tr>
+                                                <td>{{ document.0}}</td>
+                                                <td>{{ document.1  }}</td>
+                                                <td>{{ document.2 }}</td>
+                                                <td>
+                                                    {% if document.3 != 'False' %}<i style='color: #5cb85c' class="fa fa-fw fa-check"></i>
+                                                    {% else %}<i style='color: #f0ad4e' class="fa fa-fw fa-exclamation-triangle"></i> Files Not Found
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                {% endif %}
+                                <br>
+                                <form role="form" action="{% url "miseq" %}" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="proceed" value="{{ miseq.id}}">
+                                    {% if missing_files %}
+                                        <button type="submit" id="ignore" class="btn btn-warning">Ignore Missing Files</button>
+                                    {% else %}
+                                        <button type="submit" id="proceed" class="btn btn-success">Proceed</button>
+                                    {% endif %}
+                                </form>
+                            {% endif %}
+                            </div>
+                        </div>
+                    </div><!-- /.box-body -->
+                </div><!-- /.box -->
+            </div><!-- /.col -->
+            <script type="text/javascript">
+                jQuery(document).ready(function($) {
+                    // When the button is clicked, all the table checkboxes get turned into a string and become the
+                    // value of the hidden ids form imput. Then the form is submitted to the server
+                    $('#click').click( function() {
+                        document.getElementById("MiSeqForm").submit();
+                    });
+
+
+                    $('#files').DataTable( {
+                    dom: 'C<"clear">lfrtip',
+                    colVis: {
+                        "buttonText": "Display File Names",
+                        exclude:[0,1,3]
+                    },
+
+                    "columnDefs": [
+                        { "visible": false, "targets": [2] }
+                    ]
+                    } );
+                } );
+                $(".progress-bar").animate({
+                    width: "100%"
+                }, 20000);
+
+                function activateButton() {
+                    $('#click').prop('disabled', false);
+                }
+
+                function activateButton2() {
+                    $('#click2').prop('disabled', false);
+                }
+            </script>
+    </section><!-- /.content -->
+{% endblock %}

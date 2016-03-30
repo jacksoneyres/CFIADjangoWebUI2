@@ -1,0 +1,803 @@
+{% extends 'SilentD/base2.html' %}
+{% load staticfiles %}
+{% block navbar_db %} active {% endblock %}
+{% block body_block %}
+
+    <link href="{% static 'css/dataTables.bootstrap.css'%}" rel="stylesheet">
+    <link href="{% static 'css/styles.css'%}" rel="stylesheet">
+    <link href="{% static 'css/dataTables.colVis.css'%}" rel="stylesheet">
+    <link href="{% static 'css/dataTables.tableTools.css'%}" rel="stylesheet">
+    <link href="{% static 'css/daterangepicker.css'%}" rel="stylesheet">
+
+    <script src="{% static 'js/jquery.js' %}"></script>
+    <script src="{% static 'js/moment.min.js' %}"></script>
+    <script src="{% static 'js/daterangepicker.js' %}"></script>
+    <script src="{% static 'js/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'js/dataTables.bootstrap.js' %}"></script>
+    <script src="{% static 'js/dataTables.colVis.js' %}"></script>
+    <script src="{% static 'js/dataTables.tableTools.js' %}"></script>
+    <script src="{% static 'js/typeahead.jquery.min.js' %}"></script>
+
+    <style>
+        .panel-heading a:after {
+            font-family:'Glyphicons Halflings';
+            content:"\e114";
+            float: right;
+            color: grey;
+        }
+        .typeahead,
+.tt-query,
+.tt-hint {
+  width: 396px;
+  height: 30px;
+  padding: 8px 12px;
+  font-size: 24px;
+  line-height: 30px;
+  border: 2px solid #ccc;
+  -webkit-border-radius: 8px;
+     -moz-border-radius: 8px;
+          border-radius: 8px;
+  outline: none;
+}
+
+.typeahead {
+  background-color: #fff;
+}
+
+.typeahead:focus {
+  border: 2px solid #0097cf;
+}
+
+.tt-query {
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+     -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+          box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+}
+
+.tt-hint {
+  color: #999
+}
+
+.tt-menu {
+  width: 422px;
+  margin: 12px 0;
+  padding: 8px 0;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  -webkit-border-radius: 8px;
+     -moz-border-radius: 8px;
+          border-radius: 8px;
+  -webkit-box-shadow: 0 5px 10px rgba(0,0,0,.2);
+     -moz-box-shadow: 0 5px 10px rgba(0,0,0,.2);
+          box-shadow: 0 5px 10px rgba(0,0,0,.2);
+}
+
+.tt-suggestion {
+  padding: 3px 20px;
+  font-size: 18px;
+  line-height: 24px;
+}
+
+.tt-suggestion:hover {
+  cursor: pointer;
+  color: #fff;
+  background-color: #0097cf;
+}
+
+.tt-suggestion.tt-cursor {
+  color: #fff;
+  background-color: #0097cf;
+
+}
+
+.tt-suggestion p {
+  margin: 0;
+}
+
+.gist {
+  font-size: 14px;
+}
+    </style>
+    <section class="content-header">
+        <h1>
+            CFIA Genome Database
+        </h1>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+
+        <script>
+
+            $(document).ready(function () {
+
+                $('#forwardPrimer').tooltip({'trigger':'hover', 'title': 'Acceptable Letters are A C G T W S M K R Y B D H V N          Number of Forward and Reverse primers must match'});
+                $('#reversePrimer').tooltip({'trigger':'hover', 'title': 'Acceptable Letters are A C G T W S M K R Y B D H V N          Number of Forward and Reverse primers must match'});
+                $('#mism').tooltip({'trigger':'hover', 'title': 'Mismatches per primer (0-10)'});
+            });
+            function chText()
+            {
+                var str=document.getElementById("forwardPrimer");
+                var regex=/[^ACGTWSMKRYBDHVN]/gi;
+
+                str.value=str.value.replace(regex ,"");
+            }
+
+            $(document).ready(function() {
+                $('.input-group input[required], .input-group textarea[required], .input-group select[required]').on('focus change', function() {
+                    var $form = $(this).closest('form'),
+                            $group = $(this).closest('.input-group'),
+                            $addon = $group.find('.input-group-addon'),
+                            $icon = $addon.find('span'),
+                            state = false;
+
+                    if (!$group.data('validate')) {
+                        state = $(this).val() ? true : false;
+
+                    }else if ($group.data('validate') == "length") {
+                        var rows = document.querySelector('#forwardPrimer').value.split("\n").length;
+                        state = false;
+                        if (/^([AaCcGgTtWwSsMmKkRrYyBbDdHhVvNn \n])+$/.test($(this).val()) && $(this).val().split("\n").length == rows && $(this).val().length != 0) {
+                            state = true;
+                        }
+                    }else if ($group.data('validate') == "primer") {
+                        var rows = document.querySelector('#reversePrimer').value.split("\n").length;
+                        state = false;
+                        if (/^([AaCcGgTtWwSsMmKkRrYyBbDdHhVvNn \n])+$/.test($(this).val()) && $(this).val().split("\n").length == rows && $(this).val().length != 0) {
+                            state = true;
+                        }
+                    }else if ($group.data('validate') == "number") {
+                        state = !isNaN(parseFloat($(this).val())) && isFinite($(this).val()) && $(this).val()>= 0 && $(this).val()<= 10
+                    }
+
+                    if (state) {
+
+                        $addon.removeClass('danger');
+                        $addon.addClass('success');
+                        $icon.attr('class', 'glyphicon glyphicon-ok');
+                    }else{
+
+                        $addon.removeClass('success');
+                        $addon.addClass('danger');
+                        $icon.attr('class', 'glyphicon glyphicon-remove');
+                    }
+
+                    if ($form.find('.input-group-addon.danger').length == 0) {
+                        $('#submit').prop('disabled', false);
+                    }else{
+                        $('#submit').prop('disabled', true);
+                    }
+                });
+
+                $('.input-group input[required], .input-group textarea[required], .input-group select[required]').trigger('change');
+            });
+
+        </script>
+        <div class="row">
+            <div class="col-md-4">
+                <!-- Default box -->
+                <div class="box">
+                    <div class="box-header">
+                        <br>
+                    </div>
+                    <div class="box-body">
+                        <form id="db_form" action="{% url "database" %}" method="post">
+                            {% csrf_token %}
+                            <div class="input-group">
+                                  <label>Species</label>
+                                  <input id="the-basics" type="text" class="form-control" placeholder="States of USA">
+                            </div>
+                            <div class="input-group">
+                                <label>Date Range</label>
+                                <input type="text" id="daterange" class="form-control">
+                            </div>
+                            <div class="input-group" data-validate="primer">
+						<textarea value='ATCCTGATTATCCGAAGGTTGTAG' class="form-control"
+                                  name="forwardPrimer" id="forwardPrimer" rows='1' placeholder="Forward Primers"
+                                  required>{% if post %}{{ post.forwardPrimer }}{% else %}{% endif %}</textarea>
+                                <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                            </div>
+                            <div class="input-group" data-validate="length">
+                        <textarea class="form-control" value='CATAAGCTCCCGTATCTTGAGTC' name="reversePrimer"
+                                  id="reversePrimer" rows='1' placeholder="Reverse Primers"
+                                  required>{% if post %}{{ post.reversePrimer }}{% else %}{% endif %}</textarea>
+                                <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                            </div>
+                            <div class="input-group" data-validate="number">
+                                <input type="text" class="form-control" name="mism" id="mism" {% if post %}placeholder="{{ post.mism }}" value="{{ post.mism }}" {% else %}value="2"{% endif %} required>
+                                <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                            </div>
+                            <div class="input-group">
+                                <select class="form-control" id="genus" name="target" required>
+                                    <option value="" selected disabled>Target Organism</option>
+                                    {% if user.profile.cfia_access %}
+                                        <option value="Escherichia" {% if post %}{% if post.target == 'Escherichia' %}selected{% endif %}{% endif %}>Escherichia coli</option>
+                                        <option value="Listeria" {% if post %}{% if post.target == 'Listeria' %}selected{% endif %}{% endif %}>Listeria</option>
+                                        <option value="Salmonella" {% if post %}{% if post.target == 'Salmonella' %}selected{% endif %}{% endif %}>Salmonella</option>
+                                        <option value="Campylobacter" {% if post %}{% if post.target == 'Campylobacter' %}selected{% endif %}{% endif %}>Campylobacter</option>
+                                        <option value="Shigella" {% if post %}{% if post.target == 'Shigella' %}selected{% endif %}{% endif %}>Shigella</option>
+                                        <option value="Vibrio" {% if post %}{% if post.target == 'Vibrio' %}selected{% endif %}{% endif %}>Vibrio parahaemolyticus</option>
+                                    {% else %}
+                                        <option value="Escherichia" {% if post %}{% if post.target == 'Escherichia' %}selected{% endif %}{% endif %}>Escherichia coli</option>
+                                        <option value="Listeria" {% if post %}{% if post.target == 'Listeria' %}selected{% endif %}{% endif %}>Listeria</option>
+                                        <option value="Salmonella" {% if post %}{% if post.target == 'Salmonella' %}selected{% endif %}{% endif %}>Salmonella</option>
+                                        <option disabled value="Campylobacter" {% if post %}{% if post.target == 'Campylobacter' %}selected{% endif %}{% endif %}>Campylobacter (Soon)</option>
+                                        <option value="Shigella" {% if post %}{% if post.target == 'Shigella' %}selected{% endif %}{% endif %}>Shigella</option>
+                                        <option value="Vibrio" {% if post %}{% if post.target == 'Vibrio' %}selected{% endif %}{% endif %}>Vibrio parahaemolyticus</option>
+                                    {% endif %}
+                                </select>
+                                <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                            </div>
+                            <br>
+                            <button type="submit" id="submit" class="btn btn-primary" disabled><span class="glyphicon glyphicon-cog"></span> Analyze</button>
+                        </form>
+                    </div><!-- /.box-body -->
+                </div><!-- /.box -->
+            </div><!-- /.col -->
+
+            <div class="col-md-5">
+                <div class="panel-group" id="accordion">
+                    <div class="panel panel-default" id="panel1">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <a data-toggle="collapse" data-target="#collapseOne" href="#collapseOne">Usage Guide</a>
+                            </h4>
+                        </div>
+                        <div id="collapseOne" class="panel-collapse collapse">
+                            <div class="panel-body">
+                                PrimerVerifyR assesses the inclusivity/exclusivity of primer pairs against bacterial whole genome databases. It uses <a href="http://www.ncbi.nlm.nih.gov/tools/epcr/" >ePCR</a> and
+                                CFIA genomes supplemented by NCBI databases. Current databases include most genomes sequenced by the CFIA R&D Lab and those publically available on NCBI. <br>
+                                <br>
+
+                                Run time is proportional to the size of the target database with an average of 5 minutes <br><br>
+
+                                <strong>Batch Processing</strong><br>
+                                Each forward primer will be compared to its respective reverse primer. The number of forward and reverse primers must match.
+                                For example, a second forward primer will be compared with a second reverse primer<br><br>
+
+                                <strong>Acceptable Input Formats</strong><br>
+                                agt cgt cat<br>
+                                atngttcay<br>
+                                AGTGMCGGC<br>
+                                G CCT ATG GC<br>
+                                <br>
+                                <strong>Mismatches</strong><br>
+                                You can reduce the stringency of the primer matching by increasing the number of mismatches (default 2).
+                                Number of Mismatches applies to each primer, so a value of 2 will generate up to 4 total mismatches. <br>
+                                <br>
+                                <strong>Degenerative Bases</strong><br>
+                                All possible oligos will be generated and run against the database. For example, AGTN evaluates to AGTA, AGTG, ATGT, ATGC.
+                                Every forward oligo will be compared against every reverse oligo. This means two Ns in both primer pairs results in 4*4*4*4 (256) ePCR calls which can take many hours. <br>
+                                <br>
+                                <table class="table table-condensed">
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th style="text-align:center">Description</th>
+                                        <th colspan="4">Bases represented</th>
+                                    </tr>
+                                    <tr>
+                                        <td><b>A</b></td>
+                                        <td><b>A</b>denine</td>
+                                        <td>A</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td><b>C</b></td>
+                                        <td><b>C</b>ytosine</td>
+                                        <td></td>
+                                        <td>C</td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td><b>G</b></td>
+                                        <td><b>G</b>uanine</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>G</td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td><b>T</b></td>
+                                        <td><b>T</b>hymine</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>T</td>
+                                    </tr>
+                                    <tr>
+                                        <td><b>U</b></td>
+                                        <td><b>U</b>racil</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>U</td>
+                                    </tr>
+                                    <tr bgcolor="#E8E8E8">
+                                        <td><b>W</b></td>
+                                        <td><b>W</b>eak</td>
+                                        <td>A</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>T</td>
+                                    </tr>
+                                    <tr bgcolor="#E8E8E8">
+                                        <td><b>S</b></td>
+                                        <td><b>S</b>trong</td>
+                                        <td></td>
+                                        <td>C</td>
+                                        <td>G</td>
+                                        <td></td>
+                                    </tr>
+                                    <tr bgcolor="#E8E8E8">
+                                        <td><b>M</b></td>
+                                        <td>a<b>M</b>ino</td>
+                                        <td>A</td>
+                                        <td>C</td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                    <tr bgcolor="#E8E8E8">
+                                        <td><b>K</b></td>
+                                        <td><b>K</b>eto</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>G</td>
+                                        <td>T</td>
+                                    </tr>
+                                    <tr bgcolor="#E8E8E8">
+                                        <td><b>R</b></td>
+                                        <td>pu<b>R</b>ine</td>
+                                        <td>A</td>
+                                        <td></td>
+                                        <td>G</td>
+                                        <td></td>
+                                    </tr>
+                                    <tr bgcolor="#E8E8E8">
+                                        <td><b>Y</b></td>
+                                        <td>p<b>Y</b>rimidine</td>
+                                        <td></td>
+                                        <td>C</td>
+                                        <td></td>
+                                        <td>T</td>
+                                    </tr>
+                                    <tr>
+                                        <td><b>B</b></td>
+                                        <td>not A (<b>B</b> comes after A)</td>
+                                        <td></td>
+                                        <td>C</td>
+                                        <td>G</td>
+                                        <td>T</td>
+                                    </tr>
+                                    <tr>
+                                        <td><b>D</b></td>
+                                        <td>not C (<b>D</b> comes after C)</td>
+                                        <td>A</td>
+                                        <td></td>
+                                        <td>G</td>
+                                        <td>T</td>
+                                    </tr>
+                                    <tr>
+                                        <td><b>H</b></td>
+                                        <td>not G (<b>H</b> comes after G)</td>
+                                        <td>A</td>
+                                        <td>C</td>
+                                        <td></td>
+                                        <td>T</td>
+                                    </tr>
+                                    <tr>
+                                        <td><b>V</b></td>
+                                        <td>not T (<b>V</b> comes after T and U)</td>
+                                        <td>A</td>
+                                        <td>C</td>
+                                        <td>G</td>
+                                        <td></td>
+                                    </tr>
+                                    <tr bgcolor="#E8E8E8">
+                                        <td><b>N</b> or <b>-</b></td>
+                                        <td>any <b>N</b>ucleotide (not a gap)</td>
+                                        <td>A</td>
+                                        <td>C</td>
+                                        <td>G</td>
+                                        <td>T</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel-group" id="accordion">
+                    {% if not user.profile.cfia_access %}
+                        <div class="panel panel-default" id="panel2">
+                            <div class="panel-heading">
+                                <h4 class="panel-title">
+                                    <a data-toggle="collapse" data-target="#collapseTwo" href="#collapseTwo">Additional Info</a>
+                                </h4>
+                            </div>
+                            <div id="collapseTwo" class="panel-collapse collapse">
+                                <div class="panel-body">
+                                    <strong>Curated Genome Databases (Summer 2015)</strong>
+                                    <table class="table table-condensed">
+                                        <tr>
+                                            <th class="tg-031e">Genus</th>
+                                            <th class="tg-031e">Read Depth<br></th>
+                                            <th class="tg-031e">#Contigs</th>
+                                            <th class="tg-031e">Length mbp<br></th>
+                                            <th class="tg-031e">#NCBI<br></th>
+                                        </tr>
+                                        <tr>
+                                            <td class="tg-031e">E.Coli</td>
+                                            <td class="tg-031e">&gt;10</td>
+                                            <td class="tg-031e">&lt;390</td>
+                                            <td class="tg-031e">3.8-5.5</td>
+                                            <td class="tg-031e">2910</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="tg-031e">Salmonella</td>
+                                            <td class="tg-031e">&gt;10</td>
+                                            <td class="tg-031e">&lt;200</td>
+                                            <td class="tg-031e">3.8-5.2</td>
+                                            <td class="tg-031e">1063</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="tg-031e">Listeria<br></td>
+                                            <td class="tg-031e">&gt;10</td>
+                                            <td class="tg-031e">&lt;100</td>
+                                            <td class="tg-031e">2.18-3.17<br></td>
+                                            <td class="tg-031e">360</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="tg-031e">Campylobactor</td>
+                                            <td class="tg-031e">&gt;10</td>
+                                            <td class="tg-031e">&lt;100</td>
+                                            <td class="tg-031e">1.5-2</td>
+                                            <td class="tg-031e">262</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="tg-031e">Shigella</td>
+                                            <td class="tg-031e">-</td>
+                                            <td class="tg-031e">-</td>
+                                            <td class="tg-031e">-</td>
+                                            <td class="tg-031e">146</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="tg-031e">Vibrio parahaemolyticus</td>
+                                            <td class="tg-031e">-</td>
+                                            <td class="tg-031e">-</td>
+                                            <td class="tg-031e">-</td>
+                                            <td class="tg-031e">356</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                    {% else %}
+                        <div class="panel-group" id="accordion">
+                            <div class="panel panel-info" id="panel3">
+                                <div class="panel-heading">
+                                    <h4 class="panel-title">
+                                        <a data-toggle="collapse" data-target="#collapseThree" href="#collapseThree">CFIA Databases</a>
+                                    </h4>
+                                </div>
+                                <div id="collapseThree" class="panel-collapse collapse">
+                                    <div class="panel-body">
+                                        <strong>Curated Databases (Summer 2015)</strong>
+                                        <table class="table table-condensed">
+                                            <tr>
+                                                <th class="tg-031e">Genus</th>
+                                                <th class="tg-031e">Read Depth<br></th>
+                                                <th class="tg-031e">#Contigs</th>
+                                                <th class="tg-031e">Length mbp<br></th>
+                                                <th class="tg-031e">#CFIA<br></th>
+                                                <th class="tg-031e">#NCBI<br></th>
+                                                <th class="tg-031e">#Total<br></th>
+                                            </tr>
+                                            <tr>
+                                                <td class="tg-031e">E.coli</td>
+                                                <td class="tg-031e">&gt;10</td>
+                                                <td class="tg-031e">&lt;390</td>
+                                                <td class="tg-031e">3.8-5.5</td>
+                                                <td class="tg-031e">361</td>
+                                                <td class="tg-031e">2910</td>
+                                                <td class="tg-031e">3271</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="tg-031e">Salmonella</td>
+                                                <td class="tg-031e">&gt;10</td>
+                                                <td class="tg-031e">&lt;200</td>
+                                                <td class="tg-031e">3.8-5.2</td>
+                                                <td class="tg-031e">388</td>
+                                                <td class="tg-031e">1063</td>
+                                                <td class="tg-031e">1451</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="tg-031e">Listeria<br></td>
+                                                <td class="tg-031e">&gt;10</td>
+                                                <td class="tg-031e">&lt;100</td>
+                                                <td class="tg-031e">2.18-3.17<br></td>
+                                                <td class="tg-031e">374</td>
+                                                <td class="tg-031e">360</td>
+                                                <td class="tg-031e">734</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="tg-031e">Campylobactor</td>
+                                                <td class="tg-031e">&gt;10</td>
+                                                <td class="tg-031e">&lt;100</td>
+                                                <td class="tg-031e">1.5-2</td>
+                                                <td class="tg-031e">34</td>
+                                                <td class="tg-031e">262</td>
+                                                <td class="tg-031e">296</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="tg-031e">Shigella</td>
+                                                <td class="tg-031e">-</td>
+                                                <td class="tg-031e">-</td>
+                                                <td class="tg-031e">-</td>
+                                                <td class="tg-031e">1</td>
+                                                <td class="tg-031e">146</td>
+                                                <td class="tg-031e">147</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="tg-031e">Vibrio parahaemolyticus</td>
+                                                <td class="tg-031e">-</td>
+                                                <td class="tg-031e">-</td>
+                                                <td class="tg-031e">-</td>
+                                                <td class="tg-031e">21</td>
+                                                <td class="tg-031e">356</td>
+                                                <td class="tg-031e">377</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+            </div>
+        </div>
+
+        <div class="col-md-12">
+            <!-- Default box -->
+            <div class="box">
+                <div class="box-body">
+                    <!-- Tabs -->
+                    <ul class="nav nav-tabs">
+                        <li class="nav"><a href="#1" data-toggle="tab">Previous Tests</a></li>
+                        {% if results %}
+                            <li class="nav"><a href="#2" data-toggle="tab">Result</a></li>
+                        {% endif %}
+                        {% if misses %}
+                            <li class="nav"><a href="#3" data-toggle="tab">Misses</a></li>
+                        {% endif %}
+                    </ul>
+
+                    <!-- Tab panes -->
+                    <div class="tab-content">
+                        <div class="tab-pane fade in {% if not results %}active{% endif %}" id=1>
+                            <button type="button" id="reload" class="btn btn-primary btn-sm" onclick="location.href='.'"><span class="glyphicon glyphicon-refresh"></span> Refresh</button>
+
+                            <br>
+                            <br>
+                            <table id="T1" class="table table-striped table-condensed">
+                                <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Description</th>
+                                    <th>Forward</th>
+                                    <th id="Tm">Tm</th>
+                                    <th>Reverse</th>
+                                    <th id="Tm1">Tm</th>
+                                    <th>Organism</th>
+                                    <th>Hits</th>
+                                    <th>Result</th>
+                                </tr>
+                                </thead>
+
+                                <tbody>
+                                {% for document in documents %}
+                                    <tr>
+                                        <td>{{ document.date|date:"m-d-Y-P" }}</td>
+                                        <td>{{ document.tag }}</td>
+                                        <td>{{ document.forward }}</td>
+                                        <td>{{ document.forward_gc }}</td>
+                                        <td>{{ document.reverse }}</td>
+                                        <td>{{ document.reverse_gc }}</td>
+                                        <td>{{ document.organism }}</td>
+                                        <td>{{ document.hits }}</td>
+                                        <td>
+                                            {% if document.job_id == '' %}
+                                                <div class=inline>
+                                                <form style='float: left;' role="form" action="{% url "primer_validator" %}" method="post">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="id" value="{{ document.id }}">
+                                                    <button type="submit" id="11submit" class="btn btn-info btn-xs"><i class="fa fa-fw fa-bars"></i>Display</button>
+                                                </form>
+
+                                                <form style='float: left; padding-left: 5px' role="form" action="{% url "primer_validator" %}" method="post">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="id" value="{{ document.id }}">
+                                                    <input type="hidden" name="delete" value="delete">
+                                                    <button type="submit" id="11submit" class="btn btn-danger btn-xs"><span class="glyphicon glyphicon-trash"></span></button>
+                                                </form>
+                                            {% else %}
+                                                <form class="form-inline" role="form" action="{% url "primer_validator" %}" method="post">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="id" value="{{ document.id }}">
+                                                    <input type="hidden" name="delete" value="delete">
+                                                    <button type="submit" id="11submit" class="btn btn-danger btn-xs" style="float: left"><i class="fa fa-2x fa-cog fa-spin"></i></button>
+                                                </form>
+                                            {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {%  if results %}
+                            <div class="tab-pane fade in active" id=2>
+                                <table id="T2" class="table table-striped table-condensed">
+                                    <thead>
+                                    <tr>
+                                        <th>Seq</th>
+                                        <th>Alignment</th>
+                                        <th>Strand</th>
+                                        <th>From</th>
+                                        <th>To</th>
+                                        <th>Mism</th>
+                                        <th>Gaps</th>
+                                        <th>Length</th>
+                                    </tr>
+                                    </thead>
+
+                                    <tbody>
+                                    {% for row in results %}
+                                        <tr>
+                                            {% if row.link != "" %}
+                                                <td><a href="{{ row.link }}">{{ row.seq }}</a></td>
+                                            {% else %}
+                                                <td>{{ row.seq }}</td>
+                                            {% endif %}
+                                            <td><pre>{{ row.alignment }} </pre></td>
+                                            <td>{{ row.strand }}</td>
+                                            <td>{{ row.from }}</td>
+                                            <td>{{ row.to }}</td>
+                                            <td>{{ row.mism }}</td>
+                                            <td>{{ row.gaps }}</td>
+                                            <td>{{ row.length }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endif %}
+
+                        {%  if misses %}
+                            <div class="tab-pane fade in" id=3>
+                                <table id="T3" class="table table-striped table-condensed">
+                                    <thead>
+                                    <tr>
+                                        <th>Seq</th>
+                                    </tr>
+                                    </thead>
+
+                                    <tbody>
+                                    {% for line in misses %}
+                                        <tr>
+                                            <td>
+                                                {{ line }}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endif %}
+
+                    </div><!-- /.box-body -->
+                </div><!-- /.box -->
+            </div><!-- /.col -->
+        </div>
+
+        <!-- Datatables Initialization Script -->
+        <script type="text/javascript">
+
+                        var substringMatcher = function(strs) {
+              return function findMatches(q, cb) {
+                var matches, substringRegex;
+
+                // an array that will be populated with substring matches
+                matches = [];
+
+                // regex used to determine if a string contains the substring `q`
+                substrRegex = new RegExp(q, 'i');
+
+                // iterate through the pool of strings and for any string that
+                // contains the substring `q`, add it to the `matches` array
+                $.each(strs, function(i, str) {
+                  if (substrRegex.test(str)) {
+                    matches.push(str);
+                  }
+                });
+
+                cb(matches);
+              };
+            };
+
+            var states = ['Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California',
+              'Colorado', 'Connecticut', 'Delaware', 'Florida', 'Georgia', 'Hawaii',
+              'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana',
+              'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota',
+              'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire',
+              'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota',
+              'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island',
+              'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont',
+              'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming'
+            ];
+
+            $('#the-basics').typeahead({
+              hint: true,
+              highlight: true,
+              minLength: 1
+            },
+            {
+              name: 'states',
+              source: substringMatcher(states)
+            });
+            // Datarange Picker provided by Dan Grossman
+            $('#daterange').daterangepicker({
+                "linkedCalendars": false,
+                "autoUpdateInput": false,
+                "startDate": "01/01/2013",
+                "endDate": "10/08/2015"
+            }, function(start, end, label) {
+              console.log("New date range selected: ' + start.format('YYYY-MM-DD') + ' to ' + end.format('YYYY-MM-DD') + ' (predefined range: ' + label + ')");
+            });
+
+            jQuery(document).ready(function($) {
+                var table = $('#T2').DataTable( {
+                    dom: 'CT<"clear">lfrtip',
+                    tableTools: {
+                        "aButtons": [ "copy", "xls","print"],
+                        "sSwfPath": '../../static/swf/copy_csv_xls_pdf.swf'
+                    },
+                    colVis: {
+                        "buttonText": "Show Alignments",
+                        exclude:[0,2,3,4,5,6,7]
+                    },
+
+                    "columnDefs": [
+                        { "visible": false, "targets": [1] }
+                    ]
+
+                } );
+                //Initialize datatables and sort by Date descending
+                var table_1 = $('#T1').DataTable( {
+                    "order": [[ 0, "desc" ]]
+                } );
+
+                var table_3 = $('#T3').DataTable( {
+                    "order": [[ 0, "desc" ]]
+                } );
+            } );
+
+
+            $(document).ready(function () {
+                $('.group').hide();
+                $('#genus').change(function () {
+                    $('.group').hide();
+                    $('#'+$(this).val()).show();
+                })
+            });
+
+            $(".progress-bar").animate({
+                width: "100%"
+            }, 20000);
+        </script>
+
+    </section><!-- /.content -->
+{% endblock %}

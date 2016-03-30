@@ -1,0 +1,210 @@
+{% extends 'SilentD/base2.html' %}
+{% load staticfiles %}
+{% block navbar_mlst %} active {% endblock %}
+{% block body_block %}
+
+    <link href="{% static 'css/dataTables.bootstrap.css' %}" rel="stylesheet">
+    <link href="{% static 'css/styles.css' %}" rel="stylesheet">
+    <link href="{% static 'css/dataTables.colVis.css' %}" rel="stylesheet">
+    <link href="{% static 'css/dataTables.tableTools.css' %}" rel="stylesheet">
+    <link href="{% static 'css/dataTables.tableTools.css' %}" rel="stylesheet">
+
+    <script src="{% static 'js/jquery.js' %}"></script>
+    <script src="{% static 'js/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'js/dataTables.bootstrap.js' %}"></script>
+    <script src="{% static 'js/dataTables.colVis.js' %}"></script>
+    <script src="{% static 'js/dataTables.tableTools.js' %}"></script>
+
+    <style>
+        .panel-heading a:after {
+            font-family: 'Glyphicons Halflings', serif;
+            content: "\e114";
+            float: right;
+            color: grey;
+        }
+    </style>
+
+    <section class="content-header">
+        <h1>
+            Multi Locus Sequence Typing
+        </h1>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="panel-group" id="accordion">
+                    <div class="panel panel-default" id="panel3">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <a data-toggle="collapse" data-target="#collapseThree" href="#collapseThree">Usage and Additional Info</a>
+                            </h4>
+                        </div>
+                        <div id="collapseThree" class="panel-collapse collapse">
+                            <div class="panel-body">
+                                r/MLST is available as a job option for FastA and FastQ Projects. Only results are displayed here<br>
+                                <br>
+                                Multilocus sequence typing (MLST) is a technique in molecular biology for the typing of multiple loci.
+                                The procedure characterizes isolates of microbial species using the DNA sequences of internal fragments of multiple housekeeping genes.<br>
+                                <a href="https://en.wikipedia.org/wiki/Multilocus_sequence_typing">Multilocus sequence typing - Wikipedia, the free encyclopedia</a> MLST is currently only provided for E.coli, Listeria, Salmonella, Campylobacter, Staph Aureus and Vibrio parahaemolyticus<br>
+                                <br>
+                                Ribosomal MLST (rMLST) utilizes 53 core ribosomal genes present across most bacterial species. As such, it does not require a species specific profile and will be run against
+                                all samples. This allows for some degree of speciation. For Fasta Projects, the rMLST type is compared to those of the NCBI RefSeq (Bacterial) database, and the closest reference match is shown<br>
+                                <br>
+                                r/MLST profiles updated March 2016, RefSeq updated Feb 2016
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <!-- Default box -->
+                <div class="box">
+                    <div class="box-body">
+                        <!-- Tabs -->
+                        <ul class="nav nav-tabs">
+                            <li class="nav"><a href="#1" data-toggle="tab">Previous Tests</a></li>
+                            {% if results %}
+                                <li class="nav"><a href="#2" data-toggle="tab">Result</a></li>
+                            {% endif %}
+                        </ul>
+
+                        <!-- Tab panes -->
+                        <div class="tab-content">
+                            <div class="tab-pane fade in {% if not results %}active{% endif %}" id=1>
+                                <button type="button" id="reload" class="btn btn-primary btn-sm" onclick="location.href='.'"><span
+                                        class="glyphicon glyphicon-refresh"></span> Refresh
+                                </button>
+
+                                <br>
+                                <br>
+                                <table id="T1" class="table table-striped table-condensed">
+                                    <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Project</th>
+                                        <th>Project Type</th>
+                                        <th>MLST Profile</th>
+                                        <th>Results</th>
+                                    </tr>
+                                    </thead>
+
+                                    <tbody>
+                                    {% for document in documents %}
+
+                                        <!--<tr onclick="submitForm({{ document.id }})">-->
+                                        <tr>
+                                            <td>{{ document.date|date:"m-d-Y-P" }}</td>
+                                            <td>{{ document.tag }}</td>
+                                            <td>{{ document.type |capfirst }}</td>
+                                            <td>{{ document.project.organism }}</td>
+                                            <td>
+                                                {% if document.job_id == '' %}
+                                                    <div>
+                                                        <table cellpadding="0" cellspacing="0">
+                                                    {% if document.result %}
+                                                        <form id='result_form{{ document.id }}' style='float: left;' role="form" action="{% url "mlst" %}" method="post">
+                                                            {% csrf_token %}
+                                                            <input type="hidden" name="MLST" value="{{ document.id }}">
+                                                            <button type="submit" id="send" class="btn btn-primary btn-xs custombutton"></i>MLST
+                                                            </button>
+                                                        </form>
+                                                    &nbsp;
+                                                    {% endif %}
+                                                    {% if document.rmlst_result %}
+                                                        <form id='result_form{{ document.id }}' style='float: left;' role="form" action="{% url "mlst" %}" method="post">
+                                                            {% csrf_token %}
+                                                            <input type="hidden" name="rMLST" value="{{ document.id }}">
+                                                            <button type="submit" id="send" class="btn bg-purple btn-xs custombutton"></i>rMLST
+                                                            </button>
+                                                        </form>
+                                                    &nbsp;
+                                                    {% endif %}
+                                                    {% if document.reference %}
+                                                        <form id='result_form{{ document.id }}' style='float: left;' role="form" action="{% url "mlst" %}" method="post">
+                                                            {% csrf_token %}
+                                                            <input type="hidden" name="reference" value="{{ document.id }}">
+                                                            <button type="submit" id="send" class="btn bg-teal btn-xs custombutton"></i>Reference
+                                                            </button>
+                                                        </form>
+                                                    &nbsp;
+                                                    {% endif %}
+
+                                                    </table>
+                                                </div>
+                                                {% else %}
+                                                    <form class="form-inline" role="form" action="{% url "mlst" %}" method="post">
+                                                                {% csrf_token %}
+                                                                <input type="hidden" name="id" value="{{ document.id }}">
+                                                                <input type="hidden" name="delete" value="delete">
+                                                                <button disabled type="submit" id="submit" class="btn btn-info btn-xs loading custombutton">Processing</button>
+                                                    </form>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {% if results %}
+                                <div class="tab-pane fade in active" id=2>
+                                    <table id="T2" class="table table-striped table-condensed">
+                                        <thead>
+                                        {% for key in keys %}
+                                            <th>{{ key }}</th>
+                                        {% endfor %}
+                                        </thead>
+
+                                        <tbody>
+                                        {% for row in results %}
+                                            <tr>
+                                                {% for r in row %}
+                                                    <td>{{ r }}</td>
+                                                {% endfor %}
+                                            </tr>
+
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% endif %}
+                        </div><!-- /.box-body -->
+                    </div><!-- /.box -->
+                </div><!-- /.col -->
+            </div>
+        </div>
+
+        <!-- Datatables Initialization Script -->
+        <script type="text/javascript">
+
+            jQuery(document).ready(function ($) {
+                var table = $('#T2').DataTable({
+                    dom: 'CT<"clear">lfrtip',
+                    tableTools: {
+                        "aButtons": ["copy", "xls", "print"],
+                        "sSwfPath": '../../static/swf/copy_csv_xls_pdf.swf'
+                    },
+                    "sScrollX": "100%",
+                    "bSort" : false,
+                    "iDisplayLength": 25
+                });
+                //Initialize datatables and sort by Date descending
+                var table_1 = $('#T1').DataTable({
+                    "order": [[0, "desc"]]
+                });
+            });
+
+            function submitForm(id) {
+                var s = "result_form" + id;
+                document.getElementById(s).submit();
+            }
+        </script>
+
+    </section><!-- /.content -->
+{% endblock %}

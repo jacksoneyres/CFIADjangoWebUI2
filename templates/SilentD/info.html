@@ -1,0 +1,49 @@
+{% extends 'SilentD/base2.html' %}
+{% load staticfiles %}
+{% block navbar_info %} active {% endblock %}
+{% block body_block %}
+
+    <section class="content-header">
+        <h1>
+            Contact
+        </h1>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="row">
+            <div class="col-md-4">
+                <!-- Default box -->
+                <div class="box">
+                    <div class="box-header">
+                    </div>
+                    <div class="box-body">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <a href="http://redmine.biodiversity.agr.gc.ca/projects/cfia-genomics-portal"><IMG SRC="{% static 'images/redmine_logo_cfia.png'%}" width="100%" ALT="Redmine"></a>
+                            </div>
+                            <div class="col-lg-6">
+                                <a href="http://redmine.biodiversity.agr.gc.ca/projects/olcspades-pipeline"><IMG SRC="{% static 'images/redmine_logo_spades.png'%}" width="100%" ALT="Redmine"></a>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <br>
+                                <strong>Jackson Eyres</strong><br>
+                                Genomics Portal Developer and Maintainer:<br>
+                                Jackson Eyres jackson.eyres@inspection.gc.ca
+                            </div>
+                            <div class="col-lg-6">
+                                <br>
+                                <strong>Dr. Adam Koziol</strong><br>
+                                CFIA R&D Research Biologist,<br>
+                                OLC Assembly Pipeline Developer<br>
+                                Dr. Adam Koziol adam.koziol@inspection.gc.ca
+                            </div>
+                        </div>
+                    </div><!-- /.box-body -->
+                </div><!-- /.box -->
+            </div><!-- /.col -->
+        </div>
+    </section>
+{% endblock %}

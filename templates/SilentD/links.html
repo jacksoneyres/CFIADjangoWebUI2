@@ -1,0 +1,40 @@
+{% extends 'SilentD/base2.html' %}
+{% load staticfiles %}
+{% block navbar_info %} active {% endblock %}
+{% block body_block %}
+    <section class="content-header">
+        <h1>
+            Useful Links
+        </h1>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+        <a href="http://rast.nmpdr.org/"><h4>RAST</h4></a>
+        <p>Tool for annotating a genome,examining metabolic pathways and comparative genomic analysis with 1-4 genomes</p>
+        <a href="http://nar.oxfordjournals.org/content/early/2013/11/29/nar.gkt1226.long">The SEED and the Rapid Annotation of microbial genomes using Subsystems Technology (RAST)</a><br>
+        Ross Overbeek, Robert Olsen, Gorden D. Pusch, et. al <br>
+        Nucleic Acids Research, 42(D1):D206-D214.2014
+        <hr>
+        <a href="https://www.sanger.ac.uk/resources/software/artemis/"><h4>Artemis</h4></a>
+        <a href="http://ukpmc.ac.uk/abstract/MED/11120685">Artemis: sequence visualization and annotation.</a><br>
+        Rutherford K, Parkhill J, Crook J, Horsnell T, Rice P, Rajandream MA and Barrell B<br>
+        Bioinformatics (Oxford, England) 2000;16;10;944-5
+        <hr>
+        <a href="http://cs.wellesley.edu/~btjaden/Rockhopper/"><h4>Rockhopper</h4></a>
+        <a href="http://www.ncbi.nlm.nih.gov/pubmed/23716638">Computational analysis of bacterial RNA-seq data.</a><br>
+        Ryan McClure, Divya Balasubramanian, Yan Sun, Maksym Bobrovskyy, Paul Sumby, Caroline A. Genco, Carin K. Vanderpool, and Brian Tjaden. <br>
+        Nucleic Acids Research, 41(14):e140, 2013.
+        <hr>
+        <a href="https://cge.cbs.dtu.dk/services/"><h4>Center for Genomic Epidemiology</h4></a>
+        Provides a suite of online web applications to perform bacterial genomic analysis<br>
+
+        <hr>
+        <a href="https://lfz.corefacility.ca/sistr-app/"><h4>SISTR (Salmonella In Silico Typing Resource)</h4></a>
+        Bioinformatics online resource for rapidly interpreting in silico data for multiple Salmonella subtyping methods from draft bacterial genome assemblies.
+
+
+        <!--GeneSeekr: Co-developed by Adam Koziol and Michael Knowles
+            Camacho, Christiam, et al. "BLAST+: architecture and applications." BMC bioinformatics 10.1 (2009): 421.-->
+    </section>
+{% endblock %}

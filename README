@@ -1,0 +1,11 @@
+Requirements
+
+python manage.py runserver 0.0.0.0:8000
+python 
+**Celery**
+Requires RabbitMQ
+sudo apt-get install rabbitmq-server
+
+From Working Dir
+python manage.py celery worker --loglevel=info
+

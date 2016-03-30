@@ -1,0 +1,107 @@
+{% extends 'SilentD/base2.html' %}
+{% load staticfiles %}
+{% block navbar_spades %} active {% endblock %}
+{% block body_block %}
+    <h3>Spades Results</h3>
+    <script src={% static 'js/jquery.js' %}></script>
+    <style>
+    .progress.active .progress-bar {
+    -webkit-transition: none !important;
+    transition: none !important;
+    }
+    </style>
+
+    <table id="spades" class="table table-hover table-condensed table-stripped">
+    <thead>
+      <tr>
+        <th>Name</th>
+
+          <th>Date Modified</th>
+          <th>Size(MB)</th>
+          <th>Required Files</th>
+          <th>Analysis</th>
+
+      </tr>
+    </thead>
+
+    <tbody>
+        {% if documents %}
+			{% for document in documents %}
+				<tr>
+                <td>
+                    <a href="{{ document.file.url }}">{{ document.file.name }}</a>
+                    {% if document.result %}
+                    <br>Results: <a href="{{ document.result.url }}">{{ document.result.name }}</a>
+                    <br>
+                    {% endif %}
+                </td>
+                    <td>{{ document.date}}</td>
+                <td>{{ document.size }}</td>
+                <td>
+                   {% if document.RunInfo %}<i class="fa fa-fw fa-check" style="color:green"></i>{% else %}
+                    <i class="fa fa-fw fa-times" style="color:red"></i>{% endif %} RunInfo.xml </br>
+
+                     {% if document.Generate %}<i class="fa fa-fw fa-check" style="color:green"></i>{% else %}
+                    <i class="fa fa-fw fa-times" style="color:red"></i>{% endif %} GenerateFASTQRunStatistics.xml</br>
+
+                     {% if document.SampleSheet %}<i class="fa fa-fw fa-check" style="color:green"></i>{% else %}
+                    <i class="fa fa-fw fa-times" style="color:red"></i>{% endif %} SampleSheet.csv</br>
+                </td>
+                <td>
+                    {% if not document.RunInfo or not document.Generate or not document.SampleSheet %}
+                        <form class="form-inline" role="form" action="{% url "spades" %}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="file" value="{{ document.file.name }}">
+                            <input type="hidden" name="choice" value="delete">
+                            <button type="submit" id="11submit" class="btn btn-danger">  <i class="fa fa-fw fa-trash-o"></i>Delete</button>
+                    {% else %}
+                        {% if document.job_id == "" %}
+                        <form class="form-inline" role="form" action="{% url "spades" %}" method="post">
+			            {% csrf_token %}
+                        <input type="hidden" name="file" value="{{ document.file.name }}">
+                        <select class="form-control" name="choice">
+                            <option value="one">SPAdes</option>
+                            <option value="two">SPAdes 1.5</option>
+                            <option value="three">SPAdes 2.0</option>
+                        </select>
+                        <button type="submit" id="11submit" class="btn btn-success">Run</button>
+                            </form>
+                        {% else %}
+                           <!--<div class="progress progress-striped active">
+                                <div class="progress-bar progress-bar-success" style="width:0%"></div>
+                            </div>-->
+                            <i class="fa fa-cog fa-3x fa-spin" style="color: teal"></i>
+                            <form class="form-inline" role="form" action="{% url "spades_results" %}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="file" value="{{ document.file.name }}">
+                            <input type="hidden" name="choice" value="stop">
+                            <button type="submit" id="11submit" class="btn btn-danger">Stop</button>
+                        {% endif %}
+                    {% endif %}
+                </form>
+                </tr>
+
+			{% endfor %}
+
+		{% else %}
+			<p>No documents.</p>
+		{% endif %}
+
+    </tbody>
+  </table>
+
+   <script type="text/javascript">
+       $(".progress-bar").animate({
+        width: "100%"
+        }, 20000);
+   </script>
+     <script src={% static 'js/jquery.js' %}></script>
+    <link href="{% static 'css/jquery.dataTables.css'%}" rel="stylesheet">
+    <script src="{% static 'js/jquery.dataTables.min.js' %}"></script>
+    <script type="text/javascript">
+            jQuery(document).ready(function($) {
+                 $('#spades').DataTable();
+            } );
+    </script>
+
+{% endblock %}

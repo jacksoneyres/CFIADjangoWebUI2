@@ -1,0 +1,587 @@
+{% extends 'SilentD/base2.html' %}
+{% load staticfiles %}
+{% block navbar_gene_seeker %} active {% endblock %}
+{% block body_block %}
+
+    <link href="{% static 'css/dataTables.bootstrap.css' %}" rel="stylesheet">
+    <link href="{% static 'css/styles.css' %}" rel="stylesheet">
+    <link href="{% static 'css/dataTables.colVis.css' %}" rel="stylesheet">
+    <link href="{% static 'css/dataTables.tableTools.css' %}" rel="stylesheet">
+    <link href="{% static 'css/bootstrap-slider.css' %}" rel="stylesheet">
+    <link href="{% static 'css/select2.css' %}" rel="stylesheet">
+
+    <script src="{% static 'js/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'js/dataTables.bootstrap.js' %}"></script>
+    <script src="{% static 'js/dataTables.colVis.js' %}"></script>
+    <script src="{% static 'js/dataTables.tableTools.js' %}"></script>
+    <script src="{% static 'js/bootstrap-slider.js' %}"></script>
+    <script src="{% static 'js/select2.js' %}"></script>
+
+    <style>
+        .panel-heading a:after {
+            font-family: 'Glyphicons Halflings', serif;
+            content: "\e114";
+            float: right;
+            color: grey;
+        }
+    </style>
+
+    <section class="content-header">
+        <h1>
+            GeneSeekR
+        </h1>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+
+        <script>
+            $(document).ready(function () {
+                $("#slider1").slider({
+                    min: 0,
+                    max: 100,
+                    value: 80,
+                    step: 5,
+                    focus: true,
+                    formatter: function (value) {
+                        return 'Percent Identity: ' + value + "%";
+                    }
+                });
+            });
+
+            $(document).ready(function () {
+                $('.input-group input[required], .input-group textarea[required], .input-group select[required]').on('focus change', function () {
+                    var $form = $(this).closest('form'),
+                            $group = $(this).closest('.input-group'),
+                            $addon = $group.find('.input-group-addon'),
+                            $icon = $addon.find('span'),
+                            state = false;
+
+                    if (!$group.data('validate')) {
+                        state = $(this).val() ? true : false;
+                    } else if ($group.data('validate') == "number") {
+                        state = !isNaN(parseFloat($(this).val())) && isFinite($(this).val()) && $(this).val() > 0 && $(this).val() < 100
+                    }
+
+                    if (state) {
+
+                        $addon.removeClass('danger');
+                        $addon.addClass('success');
+                        $icon.attr('class', 'glyphicon glyphicon-ok');
+                    } else {
+
+                        $addon.removeClass('success');
+                        $addon.addClass('danger');
+                        $icon.attr('class', 'glyphicon glyphicon-remove');
+                    }
+
+                    if ($form.find('.input-group-addon.danger').length == 0) {
+                        if ($('#query').val() == 'OtherTarget') {
+                            if ($('#usertargets').val().indexOf(".fasta") > -1) {
+                                console.log("Only Query A Fasta");
+                                $('#submit').prop('disabled', false);
+                            } else {
+                                $('#submit').prop('disabled', true);
+                            }
+                        } else {
+                            $('#submit').prop('disabled', false);
+                        }
+                    }
+                });
+
+                $('.input-group input[required], .input-group textarea[required], .input-group select[required]').trigger('change');
+            });
+
+            $(document).on('change', '.btn-file :file', function () {
+                var input = $(this),
+                        numFiles = input.get(0).files ? input.get(0).files.length : 1,
+                        label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
+                input.trigger('fileselect', [numFiles, label]);
+            });
+
+            $(document).ready(function () {
+                $('#usertargets').on('fileselect', function (event, numFiles, label) {
+                    var input = $(this).parents('.input-group').find(':text'),
+                            log = numFiles > 1 ? numFiles + ' files selected' : label;
+
+                    if (log.indexOf(".fasta") == -1) {
+                        input.val('Only Fasta Files Accepted');
+                        $('#submit').attr('disabled', true);
+                    } else {
+                        input.val(log);
+                        $('#submit').attr('disabled', false);
+                    }
+                });
+            });
+
+        </script>
+
+        <div class="row">
+            <div class="col-md-4">
+                <!-- Default box -->
+                <div class="box">
+
+                    <div class="box-body">
+                        <form id="seeker_form" action="{% url "gene_seeker" %}" method="post"
+                              enctype="multipart/form-data">
+                            {% csrf_token %}
+
+                            <br>
+
+                            <div class="input-group">
+                                <select class="form-control" id="database" name="database" required>
+                                    <option disabled selected value="Subject_Sequences">Genome Sequences</option>
+                                    <optgroup label="NCBI Databases">
+                                        <option value="Ecoli_NCBI">Escherichia_NCBI</option>
+                                        <option value="Listeria_NCBI">Listeria_NCBI</option>
+                                        <option value="Salmonella_NCBI">Salmonella_NCBI</option>
+                                        <option value="Campy_NCBI">Campylobacter_NCBI</option>
+                                        <option value="Shigella_NCBI">Shigella_NCBI</option>
+                                        <option value="Vibrio_NCBI">Vibrio parahaemolyticus_NCBI</option>
+                                    </optgroup>
+
+                                    {% if user.profile.cfia_access %}
+                                        <optgroup label="CFIA Databases">
+                                        <option value="Ecoli_CFIA">Escherichia_CFIA</option>
+                                        <option value="Listeria_CFIA">Listeria_CFIA</option>
+                                        <option value="Salmonella_CFIA">Salmonella_CFIA</option>
+                                        <option value="Campy_CFIA">Campylobacter_CFIA</option>
+                                        <option value="Shigella_CFIA">Shigella_CFIA</option>
+                                        <option value="Vibrio_CFIA">Vibrio parahaemolyticus_CFIA</option>
+                                    {% endif %}
+                                    </optgroup>
+                                    <optgroup label="Projects">
+                                        {% for project in projects %}
+                                            <option value="{{ project.id }}">{{ project.description }}</option>
+                                        {% endfor %}
+                                    </optgroup>
+                                </select>
+                                <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                            </div>
+                            <br>
+
+                            <div class="input-group">
+                                <select class="form-control" id="query" name="query" required>
+                                    <option value="" selected disabled>Target Sequences</option>
+                                    <option value="OtherTarget">Upload Target Sequences</option>
+                                    <option value="stx_vtyper">VTyper</option>
+                                    <option value="Escherichia">Escherichia</option>
+                                    <option value="Listeria">Listeria</option>
+                                    <option value="Salmonella">Salmonella</option>
+                                </select>
+                                <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                            </div>
+                            <div id="OtherTarget" class="change">
+                                <div class="input-group">
+                                    <input id="uploadtargets" type="text" class="form-control" readonly
+                                           value="Upload Query Sequeces">
+                                <span class="input-group-btn">
+                                    <span id='2' class="btn btn-primary btn-file">
+                                        <span class="glyphicon glyphicon-folder"></span>Browse&hellip; <input
+                                            id="usertargets" type="file" name="usertargets" accept=".fasta">
+                                    </span>
+                                </span>
+                                </div>
+                            </div>
+                            <br>
+                            <!-- Single-value slider: -->
+                            <label>Cutoff</label><input id="slider1" style="width: 100%" type="text" name="cutoff"/><br>
+                            <br>
+                            <button type="submit" id="submit" class="btn btn-primary" disabled><span
+                                    class="glyphicon glyphicon-cog"></span> Analyze
+                            </button>
+                        </form>
+                    </div><!-- /.box-body -->
+                </div><!-- /.box -->
+            </div><!-- /.col -->
+
+
+            <div class="col-md-5">
+                <div class="panel-group" id="accordion">
+                    <div class="panel panel-default" id="panel1">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <a data-toggle="collapse" data-target="#collapseOne" href="#collapseOne">Usage Guide</a>
+                            </h4>
+                        </div>
+                        <div id="collapseOne" class="panel-collapse collapse">
+                            <div class="panel-body">
+                                GeneSeekR allows you to BLAST or reference map query gene targets against genomes.<br>
+                                <br>
+                                <strong>Genome Sequences</strong><br>
+                                You can select from premade collections of genomes defined in additional info.
+                                Alternatively you can select your own Project containing a collection of either
+                                assembled (fasta) genomes or raw reads (fastq)<br>
+                                <br>
+                                <strong>Target Sequences</strong><br>
+                                You can select from CFIA curated targets defined in additional info.
+                                Alternatively you upload your own targets in .fasta file format. Multiple targets must be in the same file.
+                                For an example on a properly formatted multifasta file, please download one of the CFIA curated targets in additional info
+                                <br><br>
+                                <strong>Cutoff Value</strong><br>
+                                The cutoff value determines the percent identity (number of identities (matched base) over the total length
+                                of target) threshold for results, Default: (80%).<br><br>
+
+                                <strong>Results</strong><br>
+                                FastA: <br>
+                                N = Not Found, + = 100% Identity, otherwise a percent identity is given. >
+                                <br>
+                                FastQ:<br>
+                                Divergence represents the opposite of percent identity, thus a divergence of 5 has a % Idendity of 95%
+                                <br>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-group" id="accordion">
+                    <div class="panel panel-default" id="panel1">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <a data-toggle="collapse" data-target="#collapseTwo" href="#collapseTwo">Additional Info</a>
+                            </h4>
+                        </div>
+                        <div id="collapseTwo" class="panel-collapse collapse">
+                            <div class="panel-body">
+                                The following programs are used for analysis:<br>
+                                <a href="https://github.com/OLC-Bioinformatics/pythonGeneSeekr">GeneSeekR</a> Dr. Adam Koziol and Michael Knowles<br>
+                                <a href="http://www.ncbi.nlm.nih.gov/books/NBK279690/">BLAST+</a> (NCBI)<br>
+                                <a href='http://genomemedicine.biomedcentral.com/articles/10.1186/s13073-014-0090-6'>SRST2</a> Michael Inouye, Harriet Dashnow, Bernie Pope, Kathryn Holt (University of Melbourne)<br><br>
+
+                                <strong>Curated Query Sequences</strong><br>
+                                <table class="table table-condensed">
+                                    <tr>
+                                        <th class="tg-031e">E.coli</th>
+                                        <th class="tg-031e">Salmonella<br></th>
+                                        <th class="tg-031e">Listeria<br></th>
+                                        <th class="tg-031e">VTyper</th>
+                                    </tr>
+                                    <tr>
+                                        <td class="tg-031e">aggR</td>
+                                        <td class="tg-031e">SE_invA</td>
+                                        <td class="tg-031e">LM_hlyA</td>
+                                        <td class="tg-031e">Shiga Toxin 1 (a/c/d)</td>
+                                        <td class="tg-031e"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="tg-031e">bfpA</td>
+                                        <td class="tg-031e">SE_stn</td>
+                                        <td class="tg-031e">LM_IGS</td>
+                                        <td class="tg-031e">Shiga Toxin 2 (a/b/c/d/e/f/g)</td>
+                                        <td class="tg-031e"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="tg-031e">eae</td>
+                                        <td class="tg-031e">SET_Ampicillin</td>
+                                        <td class="tg-031e">LM_inlj</td>
+                                        <td class="tg-031e"></td>
+                                        <td class="tg-031e"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="tg-031e">elt</td>
+                                        <td class="tg-031e">SET_Chloroamphenical</td>
+                                        <td class="tg-031e"></td>
+                                        <td class="tg-031e"></td>
+                                        <td class="tg-031e"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="tg-031e">est</td>
+                                        <td class="tg-031e">SET_Integrase</td>
+                                        <td class="tg-031e"></td>
+                                        <td class="tg-031e"></td>
+                                        <td class="tg-031e"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="tg-031e">H7</td>
+                                        <td class="tg-031e">SET_invA</td>
+                                        <td class="tg-031e"></td>
+                                        <td class="tg-031e"></td>
+                                        <td class="tg-031e"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="tg-031e">hlyA</td>
+                                        <td class="tg-031e">SET_Streptomycin</td>
+                                        <td class="tg-031e"></td>
+                                        <td class="tg-031e"></td>
+                                        <td class="tg-031e"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="tg-031e">ipaH</td>
+                                        <td class="tg-031e">SET_Sulfonamide</td>
+                                        <td class="tg-031e"></td>
+                                        <td class="tg-031e"></td>
+                                        <td class="tg-031e"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="tg-031e">VT1</td>
+                                        <td class="tg-031e">SET_Tetetracyclin</td>
+                                        <td class="tg-031e"></td>
+                                        <td class="tg-031e"></td>
+                                        <td class="tg-031e"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="tg-031e">VT2</td>
+                                        <td class="tg-031e"></td>
+                                        <td class="tg-031e"></td>
+                                        <td class="tg-031e"></td>
+                                        <td class="tg-031e"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="tg-031e">Z2099</td>
+                                        <td class="tg-031e"></td>
+                                        <td class="tg-031e"></td>
+                                        <td class="tg-031e"></td>
+                                        <td class="tg-031e"></td>
+                                    </tr>
+                                </table>
+                                <strong>Curated Genome Databases (Winter 2016)</strong>
+
+                                <p>Contains Sequences Sourced From NCBI based on the following criteria</p>
+                                <table class="table table-condensed">
+                                    <tr>
+                                        <th class="tg-031e">Genus</th>
+                                        <th class="tg-031e">Coverage<br></th>
+                                        <th class="tg-031e">#Contigs</th>
+                                        <th class="tg-031e">Length (mbp)<br></th>
+                                        <th class="tg-031e">#Sequences<br></th>
+                                    </tr>
+                                    <tr>
+                                        <td class="tg-031e">E.Coli NCBI</td>
+                                        <td class="tg-031e">&gt;10X</td>
+                                        <td class="tg-031e">&lt;390</td>
+                                        <td class="tg-031e">4-7</td>
+                                        <td class="tg-031e">2901</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="tg-031e">Salmonella NCBI</td>
+                                        <td class="tg-031e">&gt;10X</td>
+                                        <td class="tg-031e">&lt;200</td>
+                                        <td class="tg-031e">3-7</td>
+                                        <td class="tg-031e">1251</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="tg-031e">Listeria NCBI<br></td>
+                                        <td class="tg-031e">&gt;10X</td>
+                                        <td class="tg-031e">&lt;100</td>
+                                        <td class="tg-031e">2-4<br></td>
+                                        <td class="tg-031e">320</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="tg-031e">Campylobactor NCBI</td>
+                                        <td class="tg-031e">&gt;10X</td>
+                                        <td class="tg-031e">&lt;250</td>
+                                        <td class="tg-031e">1-3</td>
+                                        <td class="tg-031e">302</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="tg-031e">Shigella NCBI</td>
+                                        <td class="tg-031e">&gt;10X</td>
+                                        <td class="tg-031e">&lt;390</td>
+                                        <td class="tg-031e">3-7</td>
+                                        <td class="tg-031e">133</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="tg-031e">Vibrio parahaemolyticus NCBI</td>
+                                        <td class="tg-031e">&gt;10X</td>
+                                        <td class="tg-031e">&lt;700</td>
+                                        <td class="tg-031e">4-7</td>
+                                        <td class="tg-031e">345</td>
+                                    </tr>
+                                    {% if user.profile.cfia_access %}
+                                        <tr>
+                                            <td class="tg-031e">E.Coli CFIA</td>
+                                            <td class="tg-031e">&gt;10X</td>
+                                            <td class="tg-031e">&lt;390</td>
+                                            <td class="tg-031e">4-7</td>
+                                            <td class="tg-031e">380</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="tg-031e">Salmonella CFIA</td>
+                                            <td class="tg-031e">&gt;10X</td>
+                                            <td class="tg-031e">&lt;200</td>
+                                            <td class="tg-031e">3-7</td>
+                                            <td class="tg-031e">618</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="tg-031e">Listeria CFIA<br></td>
+                                            <td class="tg-031e">&gt;10X</td>
+                                            <td class="tg-031e">&lt;100</td>
+                                            <td class="tg-031e">2-4<br></td>
+                                            <td class="tg-031e">496</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="tg-031e">Campylobactor CFIA</td>
+                                            <td class="tg-031e">&gt;10X</td>
+                                            <td class="tg-031e">&lt;250</td>
+                                            <td class="tg-031e">1-3</td>
+                                            <td class="tg-031e">24</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="tg-031e">Shigella CFIA</td>
+                                            <td class="tg-031e">&gt;10X</td>
+                                            <td class="tg-031e">&lt;390</td>
+                                            <td class="tg-031e">3-7</td>
+                                            <td class="tg-031e">1</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="tg-031e">Vibrio parahaemolyticus CFIA</td>
+                                            <td class="tg-031e">&gt;10X</td>
+                                            <td class="tg-031e">&lt;700</td>
+                                            <td class="tg-031e">4-7</td>
+                                            <td class="tg-031e">21</td>
+                                        </tr>
+                                    {% endif %}
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <!-- Default box -->
+                <div class="box">
+                    <div class="box-body">
+                        <!-- Tabs -->
+                        <ul class="nav nav-tabs">
+                            <li class="nav"><a href="#1" data-toggle="tab">Previous Tests</a></li>
+                            {% if results %}
+                                <li class="nav"><a href="#2" data-toggle="tab">Result</a></li>
+                            {% endif %}
+                        </ul>
+
+                        <!-- Tab panes -->
+                        <div class="tab-content">
+                            <div class="tab-pane fade in {% if not results %}active{% endif %}" id=1>
+                                <button type="button" id="reload" class="btn btn-primary btn-sm"
+                                        onclick="location.href='.'"><span class="glyphicon glyphicon-refresh"></span>
+                                    Refresh
+                                </button>
+                                <br>
+                                <br>
+                                <table id="T1" class="table table-striped table-condensed">
+                                    <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Database</th>
+                                        <th>Targets</th>
+                                        <th>Program</th>
+                                        <th>Cutoff</th>
+                                        <th>Results</th>
+                                    </tr>
+                                    </thead>
+
+                                    <tbody>
+                                    {% for document in documents %}
+                                        <tr>
+                                            <td>{{ document.date|date:"m-d-Y-P" }}</td>
+                                            <td>{% if document.genome %}
+                                                <a href="{{ document.genome.url }}">{{ document.gname }}</a>{% else %}
+                                                {{ document.organism }}{% endif %}</td>
+                                            <td>{% if document.targets %}
+                                                <a href="{{ document.targets.url }}">{{ document.uname }}</a>{% else %}
+                                                {{ document.genes }}{% endif %}</td>
+                                            <td>{% if documuent.type == 'fastq' or document.type == 'Individual' %}SRST2{% else %}BLAST{% endif %}</td>
+                                            <td>{{ document.cutoff }}</td>
+                                            <td>
+                                                {% if document.job_id == '' %}
+                                                    {% if document.result %}
+                                                        <form style='float: left;' role="form"
+                                                              action="{% url "gene_seeker" %}" method="post">
+                                                            {% csrf_token %}
+                                                            <input type="hidden" name="id" value="{{ document.id }}">
+                                                            <button type="submit" id="submit"
+                                                                    class="btn btn-info btn-xs custombutton"><i
+                                                                    class="fa fa-fw fa-bars "></i>Display
+                                                            </button>
+                                                        </form>
+                                                    {% else %}
+                                                        <button type="submit" id="submit"
+                                                                class="btn btn-warning btn-xs disabled custombutton"
+                                                                style="color: white">No Results
+                                                        </button>
+                                                    {% endif %}
+                                                {% elif document.error %}
+                                                    <button type="submit" id="submit"
+                                                            class="btn btn-danger btn-xs disabled custombutton"
+                                                            style="color: white">Error
+                                                    </button>
+                                                {% else %}
+                                                    <button disabled type="submit" id="submit"
+                                                            class="btn btn-info btn-xs loading custombutton">GeneSeekR
+                                                    </button>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {% if results %}
+                                <div class="tab-pane fade in active" id=2>
+                                    <table id="T2" class="table table-striped table-condensed">
+                                        <thead>
+                                        {% for key in keys %}
+                                            <th>{{ key }}</th>
+                                        {% endfor %}
+                                        </thead>
+
+                                        <tbody>
+                                        {% for row in results %}
+                                            <tr>
+                                                {% for r in row %}
+                                                    <td>{{ r }}</td>
+                                                {% endfor %}
+                                            </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% endif %}
+                        </div><!-- /.box-body -->
+                    </div><!-- /.box -->
+                </div><!-- /.col -->
+            </div>
+        </div>
+        <!-- Datatables Initialization Script -->
+        <script type="text/javascript">
+
+            jQuery(document).ready(function ($) {
+                var table = $('#T2').DataTable({
+                    dom: 'CT<"clear">lfrtip',
+                    tableTools: {
+                        "aButtons": ["copy", "xls", "print"],
+                        "sSwfPath": '../../static/swf/copy_csv_xls_pdf.swf'
+                    },
+                    "sScrollX": "100%"
+                });
+
+                //Initialize datatables and sort by Date descending
+                var table_1 = $('#T1').DataTable({
+                    "order": [[0, "desc"]]
+                });
+            });
+
+            $(document).ready(function () {
+                $('.group').hide();
+                $('.change').hide();
+            });
+
+            $('#query').change(function () {
+                console.log("Change 2");
+                $('#usertargets').val("");
+                $('#uploadtargets').val("Upload Query Sequences");
+                $('.change').hide();
+                $('#' + $(this).val()).show();
+            });
+
+            $(document).ready(function () {
+                $('select').select2();
+            });
+        </script>
+    </section><!-- /.content -->
+
+{% endblock %}

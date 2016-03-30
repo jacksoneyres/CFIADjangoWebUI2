@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+{% load staticfiles %}
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>CFIA Genomics Portal</title>
+    <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
+
+    <link href='{% static 'css/bootstrap.min.css' %}' rel="stylesheet">
+    <link href='{% static 'css/font-awesome.min.css' %}' rel="stylesheet">
+    <link href='{% static 'css/ionicons.min.css' %}' rel="stylesheet">
+    <link href='{% static 'css/AdminLTE.css' %}' rel="stylesheet">
+    <link rel="shortcut icon" href={% static 'images/favicon.ico'  %} />
+
+    <!-- jQuery-->
+    <script src={% static 'js/jquery.js' %}></script>
+    <!-- Bootstrap Core JavaScript -->
+    <script src={% static 'js/bootstrap.js' %}></script>
+    <!-- AdminLTE App -->
+    <script src={% static 'js/app.js' %}></script>
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+          <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+          <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+        <![endif]-->
+</head>
+<body class="skin-blue">
+<!-- header logo: style can be found in header.less -->
+<header class="header">
+    <a href="{%  url 'index' %}" class="logo">
+        <!-- Add the class icon to your logo image or logo icon to add the margining -->
+        CFIA Genomics
+    </a>
+    <!-- Header Navbar: style can be found in header.less -->
+</header>
+<div class="wrapper row-offcanvas row-offcanvas-left">
+    <!-- Left side column. contains the logo and sidebar -->
+    <aside class="left-side sidebar-offcanvas">
+        <!-- sidebar: style can be found in sidebar.less -->
+        <section class="sidebar">
+            <!-- Sidebar user panel -->
+            <div class="user-panel">
+                <div class="pull-left info">
+                    <i class="fa fa-user"></i> {{ user.first_name }} {{ user.last_name }} <br>
+                    {% if user.profile.rank == 'Research' %} <span style="color:Teal">Research and Development</span>
+                    {% elif user.profile.rank == 'Diagnostic' %} <span style="color: #a6e1ec">Diagnostic</span>
+                    {% elif user.profile.rank == 'Manager' %} <span style="color: #9e004a">Manager</span>
+                    {% elif user.profile.rank == 'Quality' %} <span style="color: #9e004a">Quality Assurance</span>
+                    {% endif %}
+                    <a href='{% url 'logout' %}'><i class="fa fa-power-off"></i> Log Out</a>
+                </div>
+            </div>
+            <!-- sidebar menu: : style can be found in sidebar.less -->
+            <ul class="sidebar-menu">
+                    <li class="{% block navbar_file_upload %}{% endblock %}">
+                        <a href={% url 'file_upload' %}><i class="fa fa-fw fa-cloud-upload"></i>File Upload</a>
+                    </li>
+                    <li class="{% block navbar_data %}{% endblock %}">
+                        <a href={% url 'data' %}><i class="fa fa-fw fa-briefcase"></i>Projects</a>
+                    </li>
+                    <li class="{% block navbar_create %}{% endblock %}">
+                        <a href={% url 'create_project' %}>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i class="fa fa-fw fa-magic"></i>Create Project</a>
+                    </li>
+                    <!--<li class="{% block navbar_miseq %}{% endblock %}">
+                        <a href={% url 'miseq' %}>
+                            <i class="fa fa-fw fa-cogs"></i><span>SPAdes</span><small class="badge pull-right bg-purple">Beta</small>
+                        </a>
+                    </li>-->
+                    <!--<li class="{% block navbar_snp %}{% endblock %}">
+                        <a href={% url 'snp' %}>
+                            <i class="fa fa-fw fa-pagelines"></i><span>SNP</span><small class="badge pull-right bg-purple">Beta</small>
+                        </a>
+                    </li>-->
+                <li class="{% block navbar_primer_validator %}{% endblock %}">
+                    <a href={% url 'primer_validator' %}>
+                        <i class="fa fa-fw fa-exchange"></i><span>PrimerVerifyR</span></a>
+                </li>
+                <li class="{% block navbar_gene_seeker %}{% endblock %}">
+                    <a href={% url 'gene_seeker' %}>
+                        <i class="fa fa-fw fa-eye"></i><span>GeneSeekR</span></a>
+                </li>
+                <li class="{% block navbar_mlst %}{% endblock %}">
+                    <a href={% url 'mlst' %}>
+                        <i class="fa fa-fw fa-cubes"></i><span>MLST</span></a>
+                </li>
+                <li class="{% block navbar_amr %}{% endblock %}">
+                    <a href={% url 'amr' %}>
+                        <i class="fa fa-fw fa-shield"></i><span>AMR</span></a>
+                </li>
+
+                <li class="{% block navbar_info %}{% endblock %}">
+                    <a href="javascript:" data-toggle="collapse" data-target="#demo"><i class="fa fa-fw fa-info-circle"></i> Info <i class="fa fa-fw fa-caret-down"></i></a>
+                    <ul id="demo" class="collapse">
+                        <li>
+                            <a href={% url 'documentation' %}><i class="fa fa-fw fa-book"></i>Documentation</a>
+                        </li>
+                        <li>
+                            <a href={% url 'links' %}><i class="fa fa-fw fa-external-link-square"></i>Useful Links</a>
+                        </li>
+                        <li>
+                            <a href={% url 'contact' %}><i class="fa fa-fw fa-envelope"></i>Contact</a>
+                        </li>
+                    </ul>
+                </li>
+            <!--
+            </ul>
+        </section>
+        <!-- /.sidebar -->
+    </aside>
+
+    <!-- Right side column. Contains the navbar and content of the page -->
+    <aside class="right-side">
+        <!-- Content Header (Page header) -->
+        {% block body_block %}
+
+        {% endblock %}
+
+    </aside><!-- /.right-side -->
+</div><!-- ./wrapper -->
+</body>
+</html>
