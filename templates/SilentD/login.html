@@ -28,8 +28,14 @@
 <body>
 <div class="container">
     <div class="row">
-        <div class="col-md-6 col-md-offset-3">
 
+        <div class="col-md-6 col-md-offset-3">
+            <div class="panel panel-login">
+                <div class="panel-body" style="background-color: red">
+                    <h3>Development Version: Portal and Logins Not Always accessable (sorry!)
+                        <br> Test User: angel, Test Pass: 1234</h3>
+                    </div>
+                </div>
             <div class="panel panel-login">
                 <div class="panel-heading">
                     <h1><IMG SRC="{% static 'images/600px-Canada_Maple_Leaf.svg.png'%}" width="9%" ALT="image"> CFIA Genomics Portal</h1>
@@ -42,10 +48,11 @@
                         </div>
                     </div>-->
                     <hr>
-                    <h3>Development Version:<br> Test User: angel, Test Pass: 1234</h3>
+
                 </div>
                 <div class="panel-body">
                     <div class="row">
+
                         <div class="col-lg-12">
                             <!--Log In Form-->
                             <form id="login-form" action="/" method="post" role="form" style="display: block;">
@@ -104,9 +111,105 @@
                                 </div>
                                 {% csrf_token %}
                             </form>
-
+                            <hr>
+                        <div class="row">
+                        <div class="col-lg-6">
+                            <a href="http://redmine.biodiversity.agr.gc.ca/projects/cfia-genomics-portal"><IMG SRC="{% static 'images/redmine_logo_cfia.png'%}" width="100%" ALT="Redmine"></a>
+                        </div>
+                        <div class="col-lg-6">
+                            <a href="http://redmine.biodiversity.agr.gc.ca/projects/olcspades-pipeline"><IMG SRC="{% static 'images/redmine_logo_spades.png'%}" width="100%" ALT="Redmine"></a>
                         </div>
                     </div>
+
+                    <div class="row">
+                        <div class="col-lg-6">
+                            Jackson Eyres jackson.eyres@inspection.gc.ca
+                        </div>
+                        <div class="col-lg-6">
+                            Dr. Adam Koziol adam.koziol@inspection.gc.ca
+                        </div>
+                    </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="panel panel-login">
+                <div class="panel-body" style="background-color: aliceblue">
+                    <h3>Laboratory Logins</h3>
+                    <table class="table table-condensed">
+                        <tr>
+                            <td><strong>Lab</strong></td>
+                            <td><strong>user</strong></td>
+                            <td><strong>pass</strong></td>
+                        </tr>
+                        <tr>
+                             <td>Dartmouth</td>
+                             <td>DAR</td>
+                             <td>1234</td>
+                        </tr>
+                        <tr>
+                             <td>Charlottetown</td>
+                             <td>CHA</td>
+                             <td>1234</td>
+                        </tr>
+                        <tr>
+                             <td>St-Hyacinthe</td>
+                             <td>STH</td>
+                             <td>1234</td>
+                        </tr>
+                        <tr>
+                             <td>Longeuil</td>
+                             <td>LON</td>
+                             <td>1234</td>
+                        </tr>
+                        <tr>
+                             <td>Fallowfield (Ottawa)</td>
+                             <td>OLF</td>
+                             <td>1234</td>
+                        </tr>
+                        <tr>
+                             <td>Carling (Ottawa)</td>
+                             <td>OLC</td>
+                             <td>1234</td>
+                        </tr>
+                        <tr>
+                             <td>Greater Toronto Area</td>
+                             <td>GTA</td>
+                             <td>1234</td>
+                        </tr>
+                        <tr>
+                             <td>Winnipeg</td>
+                             <td>WIN</td>
+                             <td>1234</td>
+                        </tr>
+                        <tr>
+                             <td>Saskatoon</td>
+                             <td>SAS</td>
+                             <td>1234</td>
+                        </tr>
+                        <tr>
+                             <td>Calgary</td>
+                             <td>CAL</td>
+                             <td>1234</td>
+                        </tr>
+                        <tr>
+                             <td>Lethbridge</td>
+                             <td>LET</td>
+                             <td>1234</td>
+                        </tr>
+                        <tr>
+                             <td>Burnaby</td>
+                             <td>BUR</td>
+                             <td>1234</td>
+                        </tr>
+                        <tr>
+                             <td>Sidney</td>
+                             <td>SID</td>
+                             <td>1234</td>
+                        </tr>
+                    </table>
                 </div>
             </div>
         </div>
@@ -123,32 +226,7 @@
         {% endif %}
     </div>
 
-    <div class="row">
-        <div class="col-md-6 col-md-offset-3">
 
-            <div class="panel panel-login">
-
-                <div class="panel-body">
-                    <div class="row">
-                        <div class="col-lg-6">
-                            <a href="http://redmine.biodiversity.agr.gc.ca/projects/cfia-genomics-portal"><IMG SRC="{% static 'images/redmine_logo_cfia.png'%}" width="100%" ALT="Redmine"></a>
-                        </div>
-                        <div class="col-lg-6">
-                            <a href="http://redmine.biodiversity.agr.gc.ca/projects/olcspades-pipeline"><IMG SRC="{% static 'images/redmine_logo_spades.png'%}" width="100%" ALT="Redmine"></a>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-lg-6">
-                            Jackson Eyres jackson.eyres@inspection.gc.ca
-                        </div>
-                        <div class="col-lg-6">
-                            Dr. Adam Koziol adam.koziol@inspection.gc.ca
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
     <script type="text/javascript">
         $(function() {

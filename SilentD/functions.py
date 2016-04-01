@@ -242,6 +242,8 @@ def docker_spinner(givenpath, idname, variable1, variable2, variable3, image, cp
 
 # ARMI Data Run Against Genome Databases. Updated Nov 10, 2015
 # Antibiotic Name: Category, CFIA Rarity, E.Coli Combined Rarity, Salmonella Combined Rarity, Listeria Combined Rarity
+
+
 armi_rarity = {
     "acriflavin": ["acridine dye", 0.37817396, 0.0909366475, 0, 0.1092896175],
     "amikacin": ["aminoglycoside", 35.2242031334, 7.1536829342, 99.1706161137, 0.218579235],

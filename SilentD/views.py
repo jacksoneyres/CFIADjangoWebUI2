@@ -1,4 +1,5 @@
 import csv
+import os
 from collections import defaultdict
 # Django Related Imports
 from django.shortcuts import render
@@ -242,7 +243,8 @@ def file_upload(request):
                 newdoc.save()
                 newdoc.name = newdoc.file.name.split('/')[-1]
                 newdoc.save()
-                miseq_task.delay(newdoc.id, "Create")
+                # Create a MiSeq Task and Begin Automatic Analysis here
+                # miseq_task.delay(newdoc.id, "Create")
             else:
                 pass
     return render(request, 'SilentD/file_upload.html', {})
@@ -638,6 +640,7 @@ def data(request):
                                                  'fasta_projects': fasta_projects,
                                                  'miseq_projects': miseq_projects})
 
+
 @login_required
 def create_project(request):
 
@@ -753,12 +756,20 @@ def create_project(request):
     # Convert file size to megabytes
     for d in fastqs:
         if d.file:
-            d.size = d.file.size/1000/1000
+            if os.path.isfile(d.file.name):
+                d.size = d.file.size/1000/1000
+            else:
+                # For some reason the file has been deleted, update the databases to remove this entry
+                Data.objects.get(id=d.id).delete()
         else:
             d.size = 0
     for d in fastas:
         if d.file:
-            d.size = float(d.file.size)/1000.0/1000.0
+            if os.path.isfile(d.file.name):
+                d.size = float(d.file.size)/1000.0/1000.0
+            else:
+                # For some reason the file has been deleted, update the databases to remove this entry
+                Data.objects.get(id=d.id).delete()
         else:
             d.size = 0
     return render(request, 'SilentD/create_project.html', {'documents': documents, 'fastqs': fastqs, 'fastas': fastas})
@@ -1005,22 +1016,17 @@ def amr(request):
                     print sample_number
                     keys = lines[0].split(',')
                     keys.pop(0)
-
+                    '''
                     # Format keys list to remove quotes and final new line character
                     for key in range(len(keys)):
                         keys[key] = keys[key].replace('\"', '')
                     keys[-1] = keys[-1].replace('\n', '')
-
+                    '''
                     lines.pop(0)
-
-                    # Total counts
-                    counts = lines[0].split(',')
-                    counts.pop(0)
-                    counts = map(int, counts)
-
                     lines.pop(0)
 
                     matches = 0
+                    counts = 0
                     if amr_object.type == 'Multi Fasta':
                         for index, elem in enumerate(counts):
                             antibiotic = keys[index]
@@ -1070,46 +1076,16 @@ def amr(request):
                             li = line.split(',')
 
                             li.pop(0)
+                            print li
                             # Enumerate over the list to get all the hits
                             for index, elem in enumerate(li):
                                 if elem == '+':
-                                    # print (index, elem)
-                                    antibiotic = keys[index]
-                                    # print antibiotic
-                                    value = armi_rarity[antibiotic]
-
-                                    category = value[0]
-
-                                    rarity = value[1]
-                                    if organism == 'Escherichia':
-                                        rarity = value[2]
-                                    elif organism == 'Salmonella':
-                                        rarity = value[3]
-                                    elif organism == 'Listeria':
-                                        rarity = value[4]
-
-                                    # Simplify rarity scale to a 5 point scale, with 5 being most rare
-                                    if rarity <= 10:
-                                        rarity = 5
-                                    elif 10 < rarity <= 20:
-                                        rarity = 4
-                                    elif 20 < rarity <= 30:
-                                        rarity = 3
-                                    elif 30 < rarity <= 50:
-                                        rarity = 2
-                                    else:
-                                        rarity = 1
-
-                                    if category not in armi_results and category not in armi_categories:
-                                        # Create new dictionary entry with a dictionary
-                                        armi_results[category] = {antibiotic: rarity}
-                                        armi_categories[category] = rarity
-
-                                    else:
-                                        # Add another antibiotic to the category dictionary
-                                        armi_results[category][antibiotic] = rarity
-                                        armi_categories[category] += rarity
-
+                                    antibiotic = str(keys[index])
+                                    armi_results[antibiotic] = "1"
+                                if elem == '-':
+                                    antibiotic = str(keys[index])
+                                    armi_results[antibiotic] = "0"
+                            print len(armi_results)
                 print armi_misses
                 return render(request, 'SilentD/amr.html', {'documents': documents, 'projects': projects,
                                                             'armi_results': armi_results, "caption": caption,

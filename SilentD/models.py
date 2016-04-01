@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
+import datetime
+import os
 
 
 def create_profile(**kwargs):
@@ -98,8 +100,10 @@ def generate_path(self, filename):
     """
     object_type = self.__class__.__name__
     path = "documents/Files/tmp"
+    today = datetime.datetime.now()
+    unique_path = today.strftime("%Y%m%d") + "/" + str(self.id)
     if 'Data' in object_type:
-        path = "documents/Files/%s/%s/%s" % (self.user, self.id, filename)
+        path = "documents/Files/%s/%s/%s" % (self.user, unique_path, filename)
     elif 'MiSeq' in object_type:
         path = "documents/MiSeq/%s/%s/%s" % (self.user, self.id, filename)
     elif 'MLST' in object_type:

@@ -180,7 +180,6 @@ def miseq_task(self, obj_id, job):
 
     if job == "Create":
         # Generate MiSeq Database Entry and ID
-
         samplesheet = Data.objects.get(id=obj_id)
         new_miseq = MiSeq(user=samplesheet.user, sample_sheet=True)
         new_miseq.save()
@@ -804,7 +803,7 @@ def amr_fasta_task(self, obj_id):
             if not os.path.exists(armi_dir):
                 os.makedirs(armi_dir)
 
-            #call(['ARMI', working_dir, '-o', os.path.join(working_dir, 'ARMI')])
+            call(['ARMI', working_dir, '-o', os.path.join(working_dir, 'ARMI')])
 
             # Run blast for every unzipped genome for both ARG-ANNOT and ResFinder
             print "Running BLAST"
@@ -847,18 +846,18 @@ def amr_fasta_task(self, obj_id):
             # Save ARMI Results, Check file exists, if so, make sure it actually contains results
             armi_result_path =  os.path.join(working_dir,'ARMI')
             print armi_result_path
-            file_list = glob.glob(os.path.join(armi_result_path, 'ARMI_CARD_results*.csv'))
+            file_list = glob.glob(os.path.join(armi_result_path, '*.csv'))
             if len(file_list) == 1:
                 contains_results = False
-                with open(file_list[0], 'rt') as f:
-                    lines = f.readlines()
-                    for line in lines:
-                        if '+' in line:
-                            contains_results = True
+                #with open(file_list[0], 'rt') as f:
+                #    lines = f.readlines()
+                #    for line in lines:
+                #        if '+' in line:
+                #            contains_results = True
                             #break
-                if contains_results:
-                    print "Found Some ARMI Hits"
-                    amr_object.result5.name = file_list[0]
+                #if contains_results:
+                print "Found Some ARMI Hits"
+                amr_object.result5.name = file_list[0]
 
             amr_object.job_id = ""
             amr_object.save()
