@@ -33,6 +33,7 @@ from Bio import SeqIO
 
 # Development Boolean
 DEV = True
+DOCKER_REGISTRY = "192.168.1.5:5000"
 # General Settings
 app = Celery('tasks',
              backend='djcelery.backends.database.DatabaseBackend',
@@ -365,7 +366,6 @@ def primer_validator_task(self, obj_id):
     path_dir = 'documents/primer_validator/%s' % obj.user
     path_misses = path_dir + '/%s_misses.txt' % obj_id
     path_hits = path_dir + '/%s.csv' % obj_id
-    # path_meta = path_dir + '/%s_info.txt' % obj_id
     no_matches = []
 
     target_file = target.replace('.hash', '.txt')
@@ -386,8 +386,6 @@ def primer_validator_task(self, obj_id):
         with open(path_misses, 'w+') as f2:
             for f2_item in no_matches:
                 f2.write("%s\n" % f2_item)
-
-    # Create a results file based on database ID
 
     # Write dictionary to this file for easy retrieval
     keys = ['mism', 'from', 'seq', 'to', 'length', 'gaps', 'link',
@@ -462,19 +460,25 @@ def gene_seeker_task(self, obj_id):
             shutil.copyfile(target_start_path, target_end_path)
 
         print 'Running Gene Seeker SRST2'
-        call(['docker', 'run', '-v', os.path.abspath(working_dir)+':/app/documents',
-              '-e', 'INPUT=app/documents', '-e', 'VAR1=GeneSeekR', '-e', 'VAR2='+cutoff, 'srst2'])
+        try:
+            call(['docker', 'run', '-v', os.path.abspath(working_dir)+':/app/documents',
+                  '-e', 'INPUT=app/documents', '-e', 'VAR1=GeneSeekR', '-e', 'VAR2='+cutoff, 'srst2'])
 
-        print "Saving Results Now"
-        # Assign file to database entry for results if it exists, and is not empty
-        results_file = glob.glob(working_dir + '/*fullgenes*.txt')
-        if len(results_file) == 1 and os.path.getsize(results_file[0]) != 0:
-            obj.result.name = results_file[0]
-            obj.job_id = ''
-            obj.save()
-        else:
-            print "Something went wrong, failed GeneSeekR"
-            obj.error = 'No Results Generated'
+            print "Saving Results Now"
+            # Assign file to database entry for results if it exists, and is not empty
+            results_file = glob.glob(working_dir + '/*fullgenes*.txt')
+            if len(results_file) == 1 and os.path.getsize(results_file[0]) != 0:
+                obj.result.name = results_file[0]
+                obj.job_id = ''
+                obj.save()
+            else:
+                print "Something went wrong, failed GeneSeekR"
+                obj.error = 'No Results'
+                obj.save()
+
+        except Exception as e:
+            print "Error, GeneSeekr Failed!", e.__doc__, e.message
+            obj.error = "Error"
             obj.save()
 
     elif obj.type == 'fasta':
@@ -502,21 +506,29 @@ def gene_seeker_task(self, obj_id):
         results_abs = os.path.abspath(working_dir)
 
         print 'python GeneSeekr -i %s -m %s -o %s -c %s' % (genome_abs, target_abs, results_abs, cutoff)
-        call(['GeneSeekr', genome_abs, '-m', target_abs, '-o', results_abs, '-c', cutoff])
 
-        print "Saving Results Now"
-        # Assign file to database entry for results if it exists, and is not empty
-        results_file = glob.glob(working_dir + '/*.csv')
-        if len(results_file) == 1 and os.path.getsize(results_file[0]) != 0:
-            obj.result.name = results_file[0]
-            obj.job_id = ''
-            obj.save()
-        else:
-            print "Something went wrong, failed GeneSeekR"
-            obj.error = 'No Results Generated'
+        # Notoriously unreliable program
+        try:
+            call(['GeneSeekr', genome_abs, '-m', target_abs, '-o', results_abs, '-c', cutoff])
+
+            print "Saving Results Now"
+            # Assign file to database entry for results if it exists, and is not empty
+            results_file = glob.glob(working_dir + '/*.csv')
+            if len(results_file) == 1 and os.path.getsize(results_file[0]) != 0:
+                obj.result.name = results_file[0]
+                obj.job_id = ''
+                obj.save()
+            else:
+                print "Something went wrong, failed GeneSeekR"
+                obj.error = 'No Results'
+                obj.save()
+
+        except Exception as e:
+            print "Error, GeneSeekr Failed!", e.__doc__, e.message
+            obj.error = "Error"
             obj.save()
 
-    '''print "Removing Temporary Files"
+    print "Removing Temporary Files"
     # Remove temp files, just the fasta genomes. Target folder and results remain
     if obj.targets:
         user_targets = os.path.split(obj.targets.name)[1]
@@ -533,7 +545,6 @@ def gene_seeker_task(self, obj_id):
                     print "Not Going to Delete", name
                 else:
                     os.remove(os.path.join(root, name))
-    '''
 
 
 @app.task(bind=True)
@@ -773,8 +784,8 @@ def amr_fasta_task(self, obj_id):
     for data in data_files:
         print project_obj.description
         print len(project_obj.description)
-        amr_object = AMR(user=project_obj.user, tag=project_obj.description, organism=data.name, type=project_obj.type,
-                         job_id='1', project=project_obj)
+        amr_object = AMR(user=project_obj.user, tag=project_obj.description, organism=project_obj.organism,
+                         type=project_obj.type, job_id='1', project=project_obj)
         amr_object.save()
         amr_object_list.append(amr_object)
 
@@ -846,7 +857,7 @@ def amr_fasta_task(self, obj_id):
             # Save ARMI Results, Check file exists, if so, make sure it actually contains results
             armi_result_path =  os.path.join(working_dir,'ARMI')
             print armi_result_path
-            file_list = glob.glob(os.path.join(armi_result_path, '*.csv'))
+            file_list = glob.glob(os.path.join(armi_result_path, 'ARMI_results*.json'))
             if len(file_list) == 1:
                 contains_results = False
                 #with open(file_list[0], 'rt') as f:

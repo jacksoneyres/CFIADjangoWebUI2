@@ -1,6 +1,7 @@
 import csv
 import os
 from collections import defaultdict
+import json
 # Django Related Imports
 from django.shortcuts import render
 from django.contrib.auth import authenticate
@@ -1002,46 +1003,36 @@ def amr(request):
             elif 'ARMI' in path:
                 obj = request.POST['obj']
                 amr_object = AMR.objects.get(id=obj)
-                organism = amr_object.organism
                 armi_results = {}
                 armi_categories = {}
                 armi_misses = {}
 
                 # Create list containing description, organism species, job date and type
-                caption = [amr_object.tag, organism, amr_object.date, amr_object.type]
+                caption = [amr_object.tag, amr_object.organism, amr_object.date, amr_object.type]
 
                 with open(path, 'rt') as f:
-                    lines = f.readlines()
-                    sample_number = len(lines)-2
-                    print sample_number
-                    keys = lines[0].split(',')
-                    keys.pop(0)
-                    '''
-                    # Format keys list to remove quotes and final new line character
-                    for key in range(len(keys)):
-                        keys[key] = keys[key].replace('\"', '')
-                    keys[-1] = keys[-1].replace('\n', '')
-                    '''
-                    lines.pop(0)
-                    lines.pop(0)
+                    json_dict = json.load(f)
+                    print json_dict
+                    for key, value in json_dict.items():
+                        for element in value['resist']:
+                            if element in armi_rarity:
+                                value = armi_rarity[element]
+                                category = value[0]
+                                organism = determine_organism(amr_object.organism, 'MLST')
+                                print amr_object.organism
+                                print organism
+                                if organism == 'Escherichia':
+                                    rarity = value[2]
+                                elif organism == 'Salmonella':
+                                    rarity = value[3]
+                                elif organism == 'Listeria':
+                                    rarity = value[4]
+                                else:
+                                    rarity = 0
+                            else:
+                                category = "Other"
+                                rarity = 0
 
-                    matches = 0
-                    counts = 0
-                    if amr_object.type == 'Multi Fasta':
-                        for index, elem in enumerate(counts):
-                            antibiotic = keys[index]
-                            value = armi_rarity[antibiotic]
-                            category = value[0]
-
-                            rarity = value[1]
-                            if organism == 'Escherichia':
-                                rarity = value[2]
-                            elif organism == 'Salmonella':
-                                rarity = value[3]
-                            elif organism == 'Listeria':
-                                rarity = value[4]
-
-                            # Simplify rarity scale to a 5 point scale, with 5 being most rare
                             if rarity <= 10:
                                 rarity = 5
                             elif 10 < rarity <= 20:
@@ -1050,43 +1041,91 @@ def amr(request):
                                 rarity = 3
                             elif 30 < rarity <= 50:
                                 rarity = 2
-                            else:
+                            elif rarity > 50:
                                 rarity = 1
-                            if elem == sample_number:
-                                matches += 1
-                                if category not in armi_results and category not in armi_categories:
-                                    # Create new dictionary entry with a dictionary
-                                    armi_results[category] = {antibiotic: rarity}
-                                    armi_categories[category] = rarity
 
-                                else:
-                                    # Add another antibiotic to the category dictionary
-                                    armi_results[category][antibiotic] = rarity
-                                    armi_categories[category] += rarity
-                            elif elem == 0:
-                                if category not in armi_misses:
-                                    armi_misses[category] = {antibiotic: rarity}
-                                else:
-                                    # Add another antibiotic to the category dictionary
-                                    armi_misses[category][antibiotic] = rarity
+                            if category not in armi_results:
+                                armi_results[category] = {element: rarity}
+                            else:
+                                armi_results[category][element] = rarity
 
-                            print matches, "Matches"
-                    else:
-                        for line in lines:
-                            li = line.split(',')
+                    # print json_dict['resist']
+                    # lines = f.readlines()
+                    # sample_number = len(lines)-2
+                    # print sample_number
+                    # keys = lines[0].split(',')
+                    # keys.pop(0)
+                    #
+                    # # Format keys list to remove quotes and final new line character
+                    # for key in range(len(keys)):
+                    #     keys[key] = keys[key].replace('\"', '')
+                    # keys[-1] = keys[-1].replace('\n', '')
+                    #
+                    # lines.pop(0)
+                    # lines.pop(0)
+                    #
+                    # matches = 0
+                    # counts = 0
+                    # if amr_object.type == 'Multi Fasta':
+                    #     for index, elem in enumerate(counts):
+                    #         antibiotic = keys[index]
+                    #         value = armi_rarity[antibiotic]
+                    #         category = value[0]
+                    #
+                    #         rarity = value[1]
+                    #         if organism == 'Escherichia':
+                    #             rarity = value[2]
+                    #         elif organism == 'Salmonella':
+                    #             rarity = value[3]
+                    #         elif organism == 'Listeria':
+                    #             rarity = value[4]
+                    #
+                    #         # Simplify rarity scale to a 5 point scale, with 5 being most rare
+                    #         if rarity <= 10:
+                    #             rarity = 5
+                    #         elif 10 < rarity <= 20:
+                    #             rarity = 4
+                    #         elif 20 < rarity <= 30:
+                    #             rarity = 3
+                    #         elif 30 < rarity <= 50:
+                    #             rarity = 2
+                    #         else:
+                    #             rarity = 1
+                    #         if elem == sample_number:
+                    #             matches += 1
+                    #             if category not in armi_results and category not in armi_categories:
+                    #                 # Create new dictionary entry with a dictionary
+                    #                 armi_results[category] = {antibiotic: rarity}
+                    #                 armi_categories[category] = rarity
+                    #
+                    #             else:
+                    #                 # Add another antibiotic to the category dictionary
+                    #                 armi_results[category][antibiotic] = rarity
+                    #                 armi_categories[category] += rarity
+                    #         elif elem == 0:
+                    #             if category not in armi_misses:
+                    #                 armi_misses[category] = {antibiotic: rarity}
+                    #             else:
+                    #                 # Add another antibiotic to the category dictionary
+                    #                 armi_misses[category][antibiotic] = rarity
+                    #
+                    #         print matches, "Matches"
+                    # else:
+                    #     for line in lines:
+                    #         li = line.split(',')
+                    #
+                    #         li.pop(0)
+                    #         print li
+                    #         # Enumerate over the list to get all the hits
+                    #         for index, elem in enumerate(li):
+                    #             if elem == '+':
+                    #                 antibiotic = str(keys[index])
+                    #                 armi_results[antibiotic] = "1"
+                    #             if elem == '-':
+                    #                 antibiotic = str(keys[index])
+                    #                 armi_results[antibiotic] = "0"
+                    #         print len(armi_results)
 
-                            li.pop(0)
-                            print li
-                            # Enumerate over the list to get all the hits
-                            for index, elem in enumerate(li):
-                                if elem == '+':
-                                    antibiotic = str(keys[index])
-                                    armi_results[antibiotic] = "1"
-                                if elem == '-':
-                                    antibiotic = str(keys[index])
-                                    armi_results[antibiotic] = "0"
-                            print len(armi_results)
-                print armi_misses
                 return render(request, 'SilentD/amr.html', {'documents': documents, 'projects': projects,
                                                             'armi_results': armi_results, "caption": caption,
                                                             'armi_misses': armi_misses})

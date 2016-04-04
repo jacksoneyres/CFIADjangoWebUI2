@@ -224,7 +224,7 @@
 
                                 <strong>Results</strong><br>
                                 FastA: <br>
-                                N = Not Found, + = 100% Identity, otherwise a percent identity is given. >
+                                N = Not Found, + = 100% Identity, otherwise a percent identity is given.
                                 <br>
                                 FastQ:<br>
                                 Divergence represents the opposite of percent identity, thus a divergence of 5 has a % Idendity of 95%
@@ -251,10 +251,10 @@
                                 <strong>Curated Query Sequences</strong><br>
                                 <table class="table table-condensed">
                                     <tr>
-                                        <th class="tg-031e">E.coli</th>
-                                        <th class="tg-031e">Salmonella<br></th>
-                                        <th class="tg-031e">Listeria<br></th>
-                                        <th class="tg-031e">VTyper</th>
+                                        <th class="tg-031e"><a href="{% static 'files/Escherichia.fasta' %}">E.coli</a></th>
+                                        <th class="tg-031e"><a href="{% static 'files/Salmonella.fasta' %}">Salmonella</a></th>
+                                        <th class="tg-031e"><a href="{% static 'files/Listeria.fasta' %}">Listeria</a></th>
+                                        <th class="tg-031e"><a href="{% static 'files/stx_vtyper.fasta' %}">VTyper</a></th>
                                     </tr>
                                     <tr>
                                         <td class="tg-031e">aggR</td>
@@ -467,7 +467,7 @@
                                         <th>Date</th>
                                         <th>Database</th>
                                         <th>Targets</th>
-                                        <th>Program</th>
+                                        <th>Type</th>
                                         <th>Cutoff</th>
                                         <th>Results</th>
                                     </tr>
@@ -483,7 +483,7 @@
                                             <td>{% if document.targets %}
                                                 <a href="{{ document.targets.url }}">{{ document.uname }}</a>{% else %}
                                                 {{ document.genes }}{% endif %}</td>
-                                            <td>{% if documuent.type == 'fastq' or document.type == 'Individual' %}SRST2{% else %}BLAST{% endif %}</td>
+                                            <td>{{ document.type }}</td>
                                             <td>{{ document.cutoff }}</td>
                                             <td>
                                                 {% if document.job_id == '' %}
@@ -504,10 +504,15 @@
                                                         </button>
                                                     {% endif %}
                                                 {% elif document.error %}
-                                                    <button type="submit" id="submit"
-                                                            class="btn btn-danger btn-xs disabled custombutton"
-                                                            style="color: white">Error
-                                                    </button>
+                                                    {% if document.error == 'Error' %}
+                                                        <button type="submit" id="submit"
+                                                        class="btn btn-danger btn-xs disabled custombutton"
+                                                        style="color: white">Error</button>
+                                                    {% elif document.error == 'No Results' %}
+                                                        <button type="submit" id="submit"
+                                                        class="btn btn-danger btn-xs disabled custombutton"
+                                                        style="color: white">No Results</button>
+                                                    {% endif %}
                                                 {% else %}
                                                     <button disabled type="submit" id="submit"
                                                             class="btn btn-info btn-xs loading custombutton">GeneSeekR
