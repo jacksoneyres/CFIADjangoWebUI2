@@ -501,7 +501,7 @@
                                 <tbody>
                                 {% for document in documents %}
                                     <tr>
-                                        <td>{{ document.date|date:"m-d-Y-P" }}</td>
+                                        <td>{{ document.date|date:"m-d-Y-H:i" }}</td>
                                         <td>{{ document.tag }}</td>
                                         <td>{{ document.forward }}</td>
                                         <td>{{ document.forward_gc }}</td>

@@ -99,7 +99,7 @@
 
                                         <!--<tr onclick="submitForm({{ document.id }})">-->
                                         <tr>
-                                            <td>{{ document.date|date:"m-d-Y-P" }}</td>
+                                            <td>{{ document.date|date:"m-d-Y-H:i" }}</td>
                                             <td>{{ document.tag }}</td>
                                             <td>{{ document.type |capfirst }}</td>
                                             <td>{{ document.project.organism }}</td>

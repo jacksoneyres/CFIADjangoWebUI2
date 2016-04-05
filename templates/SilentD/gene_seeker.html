@@ -476,7 +476,7 @@
                                     <tbody>
                                     {% for document in documents %}
                                         <tr>
-                                            <td>{{ document.date|date:"m-d-Y-P" }}</td>
+                                            <td>{{ document.date|date:"m-d-Y-H:i" }}</td>
                                             <td>{% if document.genome %}
                                                 <a href="{{ document.genome.url }}">{{ document.gname }}</a>{% else %}
                                                 {{ document.organism }}{% endif %}</td>

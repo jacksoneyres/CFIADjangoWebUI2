@@ -498,17 +498,35 @@ def gene_seeker_task(self, obj_id):
 
         # Check for User Uploaded Targets or Select Premade Ones
         if genes == "OtherTarget":
+            sequences = []
             target_start_path = obj.targets.name
+            # Verify correctly formatted fasta file
+            target_end_path = str(target_start_path).replace(".fasta", "_v.fasta")
+            output_handle = open(target_end_path, "w")
+            for record in SeqIO.parse(open(target_start_path, "rU"), "fasta"):
+                sequences.append(record)
+            if len(sequences) > 0:
+                SeqIO.write(sequences, output_handle, "fasta")
+                output_handle.close()
+                obj.targets.name = target_end_path
+                obj.save()
+                target_abs = os.path.abspath(target_end_path)
+            else:
+                print "ERROR: Improper Formatted Fasta"
+                obj.error = "Error"
+                obj.save()
+                return
         else:
             target_start_path = 'documents/Targets/%s.fasta' % genes
-        target_abs = os.path.abspath(target_start_path)
+            target_abs = os.path.abspath(target_start_path)
 
         results_abs = os.path.abspath(working_dir)
 
-        print 'python GeneSeekr -i %s -m %s -o %s -c %s' % (genome_abs, target_abs, results_abs, cutoff)
+        print 'GeneSeekr %s -m %s -o %s -c %s' % (genome_abs, target_abs, results_abs, cutoff)
 
         # Notoriously unreliable program
         try:
+
             call(['GeneSeekr', genome_abs, '-m', target_abs, '-o', results_abs, '-c', cutoff])
 
             print "Saving Results Now"
@@ -719,7 +737,7 @@ def mmlst_task(self, obj_id):
                         mlst_object.result.name = result_file[0]
 
                     call(['python', 'mMLST.py', '-s', working_dir, '-a', rmlst_path, '-r', working_dir,
-                          '-R', './referenceGenomes', '-t', 'rMLST', '-b'])
+                          '-R', 'documents/Targets/referenceGenomes', '-t', 'rMLST', '-b'])
                     result_file = glob.glob(os.path.join(working_dir, 'rMLST*.csv'))
                     if len(result_file) == 1:
                         mlst_object.rmlst_result.name = result_file[0]
@@ -951,7 +969,8 @@ def amr_fastq_task(self, obj_id):
     docker_spinner(docker_path, obj_id, 'AMR', 0, 0, 'srst2', 12, 12000)
     '''
 
-    call(['docker', 'run', '-v', os.path.abspath(data_path)+':/app/documents', '-e', 'INPUT=app/documents', '-e', 'VAR1=AMR', 'srst2'])
+    call(['docker', 'run', '-v', os.path.abspath(data_path)+':/app/documents', '-e', 'INPUT=app/documents', '-e',
+          'VAR1=AMR', '-e', 'VAR2=10', 'srst2'])
 
     print "Saving SRST2 Results Now"
     result_file = glob.glob(os.path.join(data_path, '*fullgenes*.txt'))
@@ -969,6 +988,8 @@ def amr_fastq_task(self, obj_id):
         print "No Results Found :("
         project_obj.amr_results = 'Error'
         project_obj.save()
+        amr_obj.error = "No Results"
+        amr_obj.save()
 
     amr_obj.job_id = ''
     amr_obj.save()

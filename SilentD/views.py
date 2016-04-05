@@ -598,7 +598,7 @@ def data(request):
                 pro_obj.save()
                 if pro_obj.type == 'fasta':
                     amr_fasta_task.delay(proj_id)
-                elif pro_obj.type == 'fastq' or pro_obj.type == 'Individual':
+                elif pro_obj.type == 'fastq':
                     amr_fastq_task.delay(proj_id)
 
             elif job == 'mlst_start':
@@ -929,11 +929,17 @@ def mlst(request):
         with open(path, 'rt') as f:
             lines = f.readlines()
             if project_type == 'fasta':
-                keys = lines[0].replace(",\n","").split(',')
+                keys = lines[0].replace("\n","").split(',')
+                if keys[-1] == "":
+                    keys.pop()
+
                 lines.pop(0)
                 for line in lines:
-                    line_split = line.split(',')
-                    line_split.pop()    # Removes the trailing empty string after splitting
+                    print line
+                    line_split = line.replace("\n","").split(',')
+                    print line_split
+                    if line_split[-1] == "":
+                        line_split.pop()    # Removes the trailing empty string after splitting
                     if line_split[0] != 'Strain':
                         data_list.append(line_split)
             elif project_type == 'fastq':
@@ -970,10 +976,6 @@ def amr(request):
     if request.user.is_authenticated():
         username = request.user.username
 
-    # Retrieve projects, sort by date descending, keep only 10 most recent
-    projects = Project.objects.filter(user=username).order_by('-date')
-    projects = projects[:10]
-
     if request.POST:
         # Send back the result file in a table, either ARG-ANNOT or ResFinder
         if 'result' in request.POST:
@@ -981,30 +983,14 @@ def amr(request):
             documents = AMR.objects.filter(user=username)
 
             data_list = []
-            chart_data = {'aminoglycosides': 0, 'beta-lactamases': 0, 'fosfomycin': 0, 'fluoroquinolones': 0,
-                          'glycopeptides': 0, 'macrolide-lincosamide-streptogramin': 0, 'phenicol': 0, 'rifampicin': 0,
-                          'sulfonamides': 0, 'tetracyclines': 0, 'trimethoprim': 0}
 
             # Form data is the path to result file
             path = request.POST['result']
-            if '_results.txt' in path:
-                with open(path, 'rt') as f:
-                    lines = f.readlines()
-                    print lines[0]
-                    keys = lines[0].split(',')
-                    lines.pop(0)
-                    for line in lines:
-                        print line
-                        data_list.append(line.split(','))
 
-                return render(request, 'SilentD/amr.html', {'documents': documents, 'projects': projects,
-                                                            'display': True, 'results': data_list, 'keys': keys})
-
-            elif 'ARMI' in path:
+            if 'ARMI' in path:
                 obj = request.POST['obj']
                 amr_object = AMR.objects.get(id=obj)
                 armi_results = {}
-                armi_categories = {}
                 armi_misses = {}
 
                 # Create list containing description, organism species, job date and type
@@ -1049,183 +1035,28 @@ def amr(request):
                             else:
                                 armi_results[category][element] = rarity
 
-                    # print json_dict['resist']
-                    # lines = f.readlines()
-                    # sample_number = len(lines)-2
-                    # print sample_number
-                    # keys = lines[0].split(',')
-                    # keys.pop(0)
-                    #
-                    # # Format keys list to remove quotes and final new line character
-                    # for key in range(len(keys)):
-                    #     keys[key] = keys[key].replace('\"', '')
-                    # keys[-1] = keys[-1].replace('\n', '')
-                    #
-                    # lines.pop(0)
-                    # lines.pop(0)
-                    #
-                    # matches = 0
-                    # counts = 0
-                    # if amr_object.type == 'Multi Fasta':
-                    #     for index, elem in enumerate(counts):
-                    #         antibiotic = keys[index]
-                    #         value = armi_rarity[antibiotic]
-                    #         category = value[0]
-                    #
-                    #         rarity = value[1]
-                    #         if organism == 'Escherichia':
-                    #             rarity = value[2]
-                    #         elif organism == 'Salmonella':
-                    #             rarity = value[3]
-                    #         elif organism == 'Listeria':
-                    #             rarity = value[4]
-                    #
-                    #         # Simplify rarity scale to a 5 point scale, with 5 being most rare
-                    #         if rarity <= 10:
-                    #             rarity = 5
-                    #         elif 10 < rarity <= 20:
-                    #             rarity = 4
-                    #         elif 20 < rarity <= 30:
-                    #             rarity = 3
-                    #         elif 30 < rarity <= 50:
-                    #             rarity = 2
-                    #         else:
-                    #             rarity = 1
-                    #         if elem == sample_number:
-                    #             matches += 1
-                    #             if category not in armi_results and category not in armi_categories:
-                    #                 # Create new dictionary entry with a dictionary
-                    #                 armi_results[category] = {antibiotic: rarity}
-                    #                 armi_categories[category] = rarity
-                    #
-                    #             else:
-                    #                 # Add another antibiotic to the category dictionary
-                    #                 armi_results[category][antibiotic] = rarity
-                    #                 armi_categories[category] += rarity
-                    #         elif elem == 0:
-                    #             if category not in armi_misses:
-                    #                 armi_misses[category] = {antibiotic: rarity}
-                    #             else:
-                    #                 # Add another antibiotic to the category dictionary
-                    #                 armi_misses[category][antibiotic] = rarity
-                    #
-                    #         print matches, "Matches"
-                    # else:
-                    #     for line in lines:
-                    #         li = line.split(',')
-                    #
-                    #         li.pop(0)
-                    #         print li
-                    #         # Enumerate over the list to get all the hits
-                    #         for index, elem in enumerate(li):
-                    #             if elem == '+':
-                    #                 antibiotic = str(keys[index])
-                    #                 armi_results[antibiotic] = "1"
-                    #             if elem == '-':
-                    #                 antibiotic = str(keys[index])
-                    #                 armi_results[antibiotic] = "0"
-                    #         print len(armi_results)
-
-                return render(request, 'SilentD/amr.html', {'documents': documents, 'projects': projects,
+                return render(request, 'SilentD/amr.html', {'documents': documents,
                                                             'armi_results': armi_results, "caption": caption,
                                                             'armi_misses': armi_misses})
 
             else:
-                obj = AMR.objects.get(id=request.POST.get('obj'))
-                print path
                 with open(path, 'rt') as f:
                     lines = f.readlines()
                     keys = ['Strain', 'Gene', 'Query Length', 'Subject Length', 'Alignment Length', 'Matched Bases',
                             '% Identity']
+
                     # Parses Blast Output into Datatables compatible dictionary
-                    print len(lines)
                     for line in lines:
                         line_list = line.split(',')
                         coverage = (float(line_list[5])/float(line_list[3])*100.0)
-                        print obj.identity
-                        #if coverage >= obj.identity:
                         line_list.append(str(coverage))
                         data_list.append(line_list)
 
-                        if float(coverage) > 90.0:
-                            if '(AGly)' in line_list[1]:
-                                chart_data['aminoglycosides'] += 1
-                            if '(Bla)' in line_list[1]:
-                                chart_data['beta-lactamases'] += 1
-                            if '(Fos)' in line_list[1]:
-                                chart_data['fosmomycin'] += 1
-                            if '(Flq)' in line_list[1]:
-                                chart_data['fluoroquinolones'] += 1
-                            if '(Gly)' in line_list[1]:
-                                chart_data['glycopeptides'] += 1
-                            if '(MLS)' in line_list[1]:
-                                chart_data['macrolide-lincosamide-streptogramin'] += 1
-                            if '(Phe)' in line_list[1]:
-                                chart_data['phenicol'] += 1
-                            if '(Rif)' in line_list[1]:
-                                chart_data['rifampicin'] += 1
-                            if '(Sul)' in line_list[1]:
-                                chart_data['sulfonamides'] += 1
-                            if '(Tet)' in line_list[1]:
-                                chart_data['tetracyclines'] += 1
-                            if '(Tmt)' in line_list[1]:
-                                chart_data['trimethoprim'] += 1
-
-                return render(request, 'SilentD/amr.html', {'documents': documents, 'projects': projects,
+                return render(request, 'SilentD/amr.html', {'documents': documents,
                                                             'results': data_list, 'keys': keys, 'display': True})
 
-        if 'id' in request.POST:
-            # Retrievel model associated with ID to either stop job or delete
-            obj_id = request.POST['id']
-            obj = AMR.objects.get(id=obj_id)
-
-            # Delete Object from Database
-            if 'delete' in request.POST:
-                AMR.objects.get(id=obj_id).delete()
-
-            # Stop currently running job
-            elif 'stop' in request.POST:
-                obj.job_id = ''
-                obj.save()
-
-            documents = AMR.objects.filter(user=username)
-            return render(request, 'SilentD/amr.html', {'documents': documents, 'projects': projects})
-
-        # Form inputs for new job
-        tag = ''
-        if 'tag' in request.POST:
-            tag = request.POST['tag']
-
-        # Create model first to generate an object id
-        amr_object = AMR(user=username, tag=tag, job_id='1')
-        amr_object.save()
-
-        if 'project' in request.POST:
-            amr_object.job_id = request.POST['project']
-            amr_object.type = 'FastQ'
-            amr_object.job_status = "Running"
-            amr_object.save()
-
-            amr_fastq_task.delay(amr_object.id)
-        else:
-            # Save uploaded file to model after id has been generated
-            amr_object.genome = request.FILES['genome']
-            amr_object.type = 'Fasta'
-            organism = request.POST.get('organism')
-            if not organism:
-                organism = 'Other'
-            amr_object.organism = organism
-            identity = request.POST.get('identity')
-            if identity:
-                amr_object.identity = identity
-            amr_object.save()
-
-            # Run celery task
-            amr_fasta_task.delay(amr_object.id)
-
     documents = AMR.objects.filter(user=username)
-
-    return render(request, 'SilentD/amr.html', {'documents': documents, 'projects': projects})
+    return render(request, 'SilentD/amr.html', {'documents': documents })
 
 
 @login_required

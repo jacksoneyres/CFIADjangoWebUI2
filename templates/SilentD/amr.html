@@ -61,9 +61,10 @@
                             <div class="panel-body">
                                 Antimicrobial Resistance is a collection of tools to determine the presence of resistance marker genes in bacterial genomes<br>
                                 <a href="http://www.ncbi.nlm.nih.gov/books/NBK279690/">BLAST+</a> (NCBI) is used in conjunction with the ARG-ANNOT and ResFinder databases to determine the presence of resistant genes. Does not take into account
-                                resistance conferred by mutations in specific genes and thus may underestimate actual resistance.
+                                resistance conferred by mutations in specific genes and thus may underestimate actual resistance.<br>
                                 <strong>ARMI</strong> Antibiotic Resistance Marker Identifier<br>Developed by Michael Knowles of OLC. Uses BLAST along with the CARD Database.
-                                Rarity calculated based on hits amongst a species. Other (1800 CFIA Genomes), E.Coli (3299 Genomes) and Salmonella (1899 Genomes)<br><br>
+                                Rarity calculated based on hits amongst a species. Currently Rarity scales support E.Coli, Salmonella, Listeria, Vibrio, Staph and Campylobactor.
+                                If the organism doesn't correspond to these 6 bacteria, then rarity will be calculated for all bacteria genomes in our database<br><br>
                                 <table class="table table-condensed">
                                     <tr>
                                         <th class="tg-031e">Rarity (Higher is Rarer)</th>
@@ -184,18 +185,15 @@
                                     {% if documents %}
                                         {% for document in documents %}
                                             <tr>
-                                                <td>{{ document.date|date:"m-d-Y-P"  }}</td>
+                                                <td>{{ document.date|date:"m-d-Y-H:i"  }}</td>
                                                 <td>{{ document.tag }}</td>
                                                 <td>{{ document.organism }}</td>
                                                 <td>{{ document.type }}</td>
                                                 <td>
-                                                    {%  if document.error != '' %}
-                                                        <form role="form" action="{% url "amr" %}" method="post">
-                                                            {% csrf_token %}
-                                                            <input type="hidden" name="id" value="{{ document.id }}">
-                                                            <input type="hidden" name="delete" value="delete">
-                                                            <button type="submit" id="submit" class="btn btn-danger btn-xs">{{ document.error }} <span class="glyphicon glyphicon-trash"></span></button>
-                                                        </form>
+                                                    {%  if document.error %}
+                                                            <button type="submit" id="submit"
+                                                            class="btn btn-danger btn-xs disabled custombutton"
+                                                            style="color: white">Error</button>
                                                     {% else %}
                                                         {% if document.job_id == '' %} <!-- No Running Job -->
                                                             <div>
@@ -222,8 +220,6 @@
                                                                         <button type="button" id="error" disabled class="btn btn-warning btn-xs custombutton"></i>ARGannot</button>
                                                                         &nbsp;
                                                                     {% endif %}
-
-
 
                                                                     {% if document.result3 %}
                                                                         <form role="form" action="{% url "amr" %}" method="post">
