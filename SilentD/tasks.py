@@ -475,11 +475,9 @@ def gene_seeker_task(self, obj_id):
                 print "Something went wrong, failed GeneSeekR"
                 obj.error = 'No Results'
                 obj.save()
-
         except Exception as e:
-            print "Error, GeneSeekr Failed!", e.__doc__, e.message
-            obj.error = "Error"
-            obj.save()
+            print "***ERROR", e.__doc__, e.message
+            return False
 
     elif obj.type == 'fasta':
         if obj.job_id == '0':   # Start Premade Genomes for GeneSeekR

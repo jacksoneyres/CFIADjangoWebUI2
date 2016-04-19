@@ -724,9 +724,9 @@ def create_project(request):
                             messages.add_message(request, messages.ERROR, error_message)
 
             if project_creation_fail:
-                    error_message = "Error! No paired match found for the Following:  " + ", ".join(failed_list) + \
-                                    ", Ensure each pair of files contains *_R1_001.fastq.gz and *_R2_001.fastq.gz"
-                    messages.add_message(request, messages.ERROR, error_message)
+                error_message = "Error! No paired match found for the Following:  " + ", ".join(failed_list) + \
+                                ", Ensure each pair of files contains *_R1_001.fastq.gz and *_R2_001.fastq.gz"
+                messages.add_message(request, messages.ERROR, error_message)
             else:
                 # Create a Fasta or Fastq Project
                 new_project = Project(user=username, description=description, organism=organism)
