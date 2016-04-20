@@ -984,7 +984,7 @@ def amr_fastq_task(self, obj_id):
 
     else:
         print "No Results Found :("
-        project_obj.amr_results = 'Error'
+        project_obj.amr_results = 'No Results'
         project_obj.save()
         amr_obj.error = "No Results"
         amr_obj.save()

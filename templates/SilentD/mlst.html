@@ -91,6 +91,7 @@
                                         <th>Project Type</th>
                                         <th>MLST Profile</th>
                                         <th>Results</th>
+                                        <th></th>
                                     </tr>
                                     </thead>
 
@@ -132,7 +133,6 @@
                                                             <button type="submit" id="send" class="btn bg-teal btn-xs custombutton"></i>Reference
                                                             </button>
                                                         </form>
-                                                    &nbsp;
                                                     {% endif %}
 
                                                     </table>
@@ -145,6 +145,19 @@
                                                                 <button disabled type="submit" id="submit" class="btn btn-info btn-xs loading custombutton">Processing</button>
                                                     </form>
                                                 {% endif %}
+
+                                            </td>
+                                            <td>
+                                                <form style='float: right;' action="{% url "mlst" %}" method="post">
+                                                        &nbsp;
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="id" value="{{ document.id }}">
+                                                        <input type="hidden" name="delete" value="{{ document.id }}">
+                                                        <button type="submit" id="submit11"
+                                                                class="btn btn-danger btn-xs">
+                                                            <i class="fa fa-fw fa-trash-o "></i>
+                                                        </button>
+                                                </form>
                                             </td>
                                         </tr>
                                     {% endfor %}
@@ -187,7 +200,15 @@
                 var table = $('#T2').DataTable({
                     dom: 'CT<"clear">lfrtip',
                     tableTools: {
-                        "aButtons": ["copy", "xls", "print"],
+                        "aButtons": [
+                                "copy",
+                                "print",
+                                {
+                                    "sExtends":    "collection",
+                                    "sButtonText": "Save",
+                                    "aButtons":    [ "csv", "xls", "pdf" ]
+                                }
+                        ],
                         "sSwfPath": '../../static/swf/copy_csv_xls_pdf.swf'
                     },
                     "sScrollX": "100%",

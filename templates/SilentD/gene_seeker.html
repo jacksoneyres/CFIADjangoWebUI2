@@ -519,6 +519,16 @@
                                                             class="btn btn-info btn-xs loading custombutton">GeneSeekR
                                                     </button>
                                                 {% endif %}
+                                                <form style='float: right;' role="form" action="{% url "gene_seeker" %}" method="post">
+                                                        &nbsp;
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="id" value="{{ document.id }}">
+                                                        <input type="hidden" name="delete" value="{{ document.id }}">
+                                                        <button type="submit" id="submit11"
+                                                                class="btn btn-danger btn-xs">
+                                                            <i class="fa fa-fw fa-trash-o "></i>
+                                                        </button>
+                                            </form>
                                             </td>
                                         </tr>
                                     {% endfor %}

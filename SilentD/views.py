@@ -39,7 +39,7 @@ from .tasks import spades_task
 from Bio.SeqUtils import MeltingTemp
 from functions import armi_rarity
 from functions import determine_organism
-
+import shutil
 
 # Create your views here.
 def register(request):
@@ -284,6 +284,16 @@ def primer_validator(request):
                 print "Killing Task"
                 app.control.revoke(job_id, terminate=True)
                 print "Deleting Object"
+
+                data_path = obj.result.name
+                if data_path:
+                    os.remove(data_path)
+
+                data_path_2 = obj.misses.name
+                if data_path_2:
+                    os.remove(data_path_2)
+
+                print "Deleting Database Entry"
                 obj.delete()
 
                 # Sends updated list back to client
@@ -368,10 +378,26 @@ def gene_seeker(request):
             obj_id = request.POST['id']
             obj = GeneS.objects.get(id=obj_id)
 
+            job_id = obj.job_id
+
             # Delete Object from Database
             if 'delete' in request.POST:
-                GeneS.objects.get(id=obj_id).delete()
+                print "Killing Task"
+                app.control.revoke(job_id, terminate=True)
+                print "Deleting Object"
 
+                if obj.result:
+                    data_path = obj.result.name
+                    os.remove(data_path)
+
+                obj.delete()
+
+                documents = GeneS.objects.filter(user=username)
+                for d in documents:
+                    if d.targets != '':
+                        d.uname = d.targets.name.split('/')[-1]
+
+                return render(request, 'SilentD/gene_seeker.html', {'documents': documents, 'projects': projects})
             # Stop currently running job
             elif 'stop' in request.POST:
                 obj.job_id = ''
@@ -921,6 +947,15 @@ def mlst(request):
             obj = MLST.objects.get(id=obj_id)
             project_type = obj.type
             path = obj.reference.name
+        elif 'delete' in request.POST:
+            obj_id = request.POST['delete']
+            obj = MLST.objects.get(id=obj_id)
+            obj.project.mlst_results = ""
+            obj.project.save()
+            obj.delete()
+            documents = MLST.objects.filter(user=username)
+            return render(request, 'SilentD/mlst.html', {'documents': documents})
+
         else:
             path = ""
         print project_type
@@ -978,7 +1013,16 @@ def amr(request):
 
     if request.POST:
         # Send back the result file in a table, either ARG-ANNOT or ResFinder
-        if 'result' in request.POST:
+        if 'delete' in request.POST:
+            obj_id = request.POST['delete']
+            obj = AMR.objects.get(id=obj_id)
+            obj.project.amr_results = ""
+            obj.project.save()
+            obj.delete()
+            documents = AMR.objects.filter(user=username)
+            return render(request, 'SilentD/amr.html', {'documents': documents})
+
+        elif 'result' in request.POST:
             # Retrieve all past jobs to send to page
             documents = AMR.objects.filter(user=username)
 

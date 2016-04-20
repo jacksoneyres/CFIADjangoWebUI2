@@ -178,6 +178,7 @@
                                         <th>Organism</th>
                                         <th>Type</th>
                                         <th>Results</th>
+                                        <th></th>
                                     </tr>
                                     </thead>
 
@@ -254,6 +255,18 @@
                                                             </form>
                                                         {% endif %}
                                                     {% endif %}
+                                                </td>
+                                                <td>
+                                                    <form style='float: right;' role="form" action="{% url "amr" %}" method="post">
+                                                            &nbsp;
+                                                            {% csrf_token %}
+                                                            <input type="hidden" name="id" value="{{ document.id }}">
+                                                            <input type="hidden" name="delete" value="{{ document.id }}">
+                                                            <button type="submit" id="submit11"
+                                                                    class="btn btn-danger btn-xs">
+                                                                <i class="fa fa-fw fa-trash-o "></i>
+                                                            </button>
+                                                </form>
                                                 </td>
                                             </tr>
                                         {% endfor %}

@@ -492,6 +492,7 @@
                                     <th id="Tm">Tm</th>
                                     <th>Reverse</th>
                                     <th id="Tm1">Tm</th>
+                                    <th>Mismatches</th>
                                     <th>Organism</th>
                                     <th>Hits</th>
                                     <th>Result</th>
@@ -507,6 +508,7 @@
                                         <td>{{ document.forward_gc }}</td>
                                         <td>{{ document.reverse }}</td>
                                         <td>{{ document.reverse_gc }}</td>
+                                        <td>{{ document.mism }}</td>
                                         <td>{{ document.organism }}</td>
                                         <td>{{ document.hits }}</td>
                                         <td>
@@ -519,6 +521,7 @@
                                                                 class="btn btn-info btn-xs custombutton"><i
                                                                 class="fa fa-fw fa-bars "></i>Display
                                                         </button>
+
                                                     </form>
                                                 {% else %}
                                                     <button type="submit" id="submit12"
@@ -526,6 +529,7 @@
                                                             style="color: white">No Results
                                                     </button>
                                                 {% endif %}
+
                                             {% elif document.job_id == 'Error' %}
                                                     <button type="submit" id="submit"
                                                             class="btn btn-danger btn-xs disabled custombutton"
@@ -536,6 +540,17 @@
                                                             class="btn btn-info btn-xs loading custombutton">PrimerV
                                                     </button>
                                             {% endif %}
+
+                                            <form style='float: right;' role="form" action="{% url "primer_validator" %}" method="post">
+                                                        &nbsp;
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="id" value="{{ document.id }}">
+                                                        <input type="hidden" name="delete" value="{{ document.id }}">
+                                                        <button type="submit" id="submit11"
+                                                                class="btn btn-danger btn-xs">
+                                                            <i class="fa fa-fw fa-trash-o "></i>
+                                                        </button>
+                                            </form>
                                         </td>
                                     </tr>
                                 {% endfor %}
@@ -615,7 +630,15 @@
                 var table = $('#T2').DataTable( {
                     dom: 'CT<"clear">lfrtip',
                     tableTools: {
-                        "aButtons": [ "copy", "xls","print"],
+                        "aButtons": [
+                                "copy",
+                                "print",
+                                {
+                                    "sExtends":    "collection",
+                                    "sButtonText": "Save",
+                                    "aButtons":    [ "csv", "xls", "pdf" ]
+                                }
+                        ],
                         "sSwfPath": '../../static/swf/copy_csv_xls_pdf.swf'
                     },
                     colVis: {
