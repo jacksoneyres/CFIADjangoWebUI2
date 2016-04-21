@@ -12,6 +12,7 @@ from django.http import HttpResponseRedirect
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
+from django.utils import timezone
 from .forms import UserForm
 # Database Models
 from .models import Data
@@ -40,6 +41,7 @@ from Bio.SeqUtils import MeltingTemp
 from functions import armi_rarity
 from functions import determine_organism
 import shutil
+import datetime
 
 # Create your views here.
 def register(request):
@@ -657,6 +659,18 @@ def data(request):
             documents = MLST.objects.filter(user=username, project=pro_obj)
             return render(request, 'SilentD/mlst.html', {'documents': documents})
 
+        elif "delete" in request.POST:
+            proj_id = request.POST['delete']
+            pro_obj = Project.objects.get(id=proj_id)
+            amr_objs = AMR.objects.filter(project=pro_obj)
+            for amr in amr_objs:
+                amr.delete()
+            mlst_objs = MLST.objects.filter(project=pro_obj)
+            for mlst in mlst_objs:
+                mlst.delete()
+            pro_obj.delete()
+
+
     # Retrieve all uploaded files relating to the user
     indiv_projects = Project.objects.filter(user=username, type='Individual')
     fastq_projects = Project.objects.filter(user=username, type='fastq')
@@ -682,99 +696,140 @@ def create_project(request):
     project_creation_fail = False
 
     if request.method == 'POST':
+
         print request.POST
-
-        description = request.POST.get('name')
-        organism = request.POST.get('organism')
-        if request.POST.get('ids'):
-            # FastQ
-            data_file_list = request.POST.get('ids')
-        else:
-            #Fasta
-            data_file_list = request.POST.get('ids2')
-
-        project_type = request.POST.get('type')
-
-        if data_file_list and organism and description and project_type:
-            data_file_list2 = data_file_list.replace('id=', '')
-            data_list = data_file_list2.split('&')
-
-            data_obj_list = []
-            filename_list = []
-            failed_list = []
-            for item in data_list:
-                    data_obj = Data.objects.get(id=item)
-                    data_obj_list.append(data_obj)
-                    filename_list.append(str(data_obj.name))
-
-            if project_type == 'fastq':
-                # Conditions below are tested in order for files to be added to a project
-                # File count is an even number
-                # Files have proper formatted _R1 or _R2 in file name
-                # Each file is paired with its other R value
-
-                if len(data_list) % 2 != 0:
-                    # List has uneven number of files due retrieval error
-                    project_creation_fail = True
+        if 'project' in request.POST:
+            ids = request.POST.get("ids")
+            print ids
+            name_list = json.loads(ids)
+            print name_list
+            project_files_fastq = []
+            project_files_fasta = []
+            now = timezone.now()
+            delta = datetime.timedelta(hours=2)
+            recent_files =  Data.objects.filter(user=username).order_by('-date')
+            for file in recent_files:
+                if (now - file.date) < delta:
+                    if file.name in name_list:
+                        print file.type
+                        if file.type == "Fastq":
+                            project_files_fastq.append(file)
+                        elif file.type == "Fasta":
+                            print "fasta"
+                            project_files_fasta.append(file)
+                    print "Recent", file.date
                 else:
-                    # Create a dictionary of strain names, and populate with found R values
-                    file_dict = defaultdict(list)
-                    for filename in filename_list:
-                        name = filename.split("_")[0]
-                        if '_R1' in filename:
-                            rvalue = 'R1'
-                            file_dict[name].append(rvalue)
-                        elif '_R2' in filename:
-                            rvalue = 'R2'
-                            file_dict[name].append(rvalue)
-                        else:
-                            error_message = "Error! File %s does not have a correct RValue in the format _R1 or _R2" \
-                                             % name
-                            messages.add_message(request, messages.ERROR, error_message)
+                    print "Not", file.date
 
-                    # Verify all files are paired and have a match of R1 and R2, not R1,R1, R2,R2 or only 1 R value
+            if len(project_files_fasta) > 1:
+                print "MAKING pROJECT"
+                new_project = Project(user=username, description=now)
+                new_project.save()
+                for obj in project_files_fasta:
+                    new_project.files.add(obj)
+                new_project.num_files = len(project_files_fasta)
+                new_project.type = "fasta"
+                new_project.save()
 
-                    for key, value in file_dict.items():
-                        if len(value) == 2:
-                            if (value[0] == "R1" and value[1] == "R2") or (value[0] == "R2" and value[1] == "R1"):
-                                print "Match!"
+            if len(project_files_fastq) > 1:
+                new_project = Project(user=username, description=now)
+                new_project.save()
+                for obj in project_files_fastq:
+                    new_project.files.add(obj)
+                new_project.num_files = len(project_files_fastq)
+                new_project.type = "fastq"
+                new_project.save()
+
+        else:
+            description = request.POST.get('name')
+            organism = request.POST.get('organism')
+            if request.POST.get('ids'):
+                # FastQ
+                data_file_list = request.POST.get('ids')
+            else:
+                #Fasta
+                data_file_list = request.POST.get('ids2')
+
+            project_type = request.POST.get('type')
+
+            if data_file_list and organism and description and project_type:
+                data_file_list2 = data_file_list.replace('id=', '')
+                data_list = data_file_list2.split('&')
+
+                data_obj_list = []
+                filename_list = []
+                failed_list = []
+                for item in data_list:
+                        data_obj = Data.objects.get(id=item)
+                        data_obj_list.append(data_obj)
+                        filename_list.append(str(data_obj.name))
+
+                if project_type == 'fastq':
+                    # Conditions below are tested in order for files to be added to a project
+                    # File count is an even number
+                    # Files have proper formatted _R1 or _R2 in file name
+                    # Each file is paired with its other R value
+
+                    if len(data_list) % 2 != 0:
+                        # List has uneven number of files due retrieval error
+                        project_creation_fail = True
+                    else:
+                        # Create a dictionary of strain names, and populate with found R values
+                        file_dict = defaultdict(list)
+                        for filename in filename_list:
+                            name = filename.split("_")[0]
+                            if '_R1' in filename:
+                                rvalue = 'R1'
+                                file_dict[name].append(rvalue)
+                            elif '_R2' in filename:
+                                rvalue = 'R2'
+                                file_dict[name].append(rvalue)
+                            else:
+                                error_message = "Error! File %s does not have a correct RValue in the format _R1 or _R2" \
+                                                 % name
+                                messages.add_message(request, messages.ERROR, error_message)
+
+                        # Verify all files are paired and have a match of R1 and R2, not R1,R1, R2,R2 or only 1 R value
+
+                        for key, value in file_dict.items():
+                            if len(value) == 2:
+                                if (value[0] == "R1" and value[1] == "R2") or (value[0] == "R2" and value[1] == "R1"):
+                                    print "Match!"
+                                else:
+                                    project_creation_fail = True
+                                    failed_list.append(key)
+                                    error_message = "Error! %s has two R1 or two R2 values" % key
+                                    messages.add_message(request, messages.ERROR, error_message)
                             else:
                                 project_creation_fail = True
                                 failed_list.append(key)
-                                error_message = "Error! %s has two R1 or two R2 values" % key
+                                error_message = "Error! 2 Files must be associated with %s" % key
                                 messages.add_message(request, messages.ERROR, error_message)
-                        else:
-                            project_creation_fail = True
-                            failed_list.append(key)
-                            error_message = "Error! 2 Files must be associated with %s" % key
-                            messages.add_message(request, messages.ERROR, error_message)
 
-            if project_creation_fail:
-                error_message = "Error! No paired match found for the Following:  " + ", ".join(failed_list) + \
-                                ", Ensure each pair of files contains *_R1_001.fastq.gz and *_R2_001.fastq.gz"
-                messages.add_message(request, messages.ERROR, error_message)
-            else:
-                # Create a Fasta or Fastq Project
-                new_project = Project(user=username, description=description, organism=organism)
-                new_project.save()
-                for obj in data_list:
-                    new_project.files.add(obj)
-                new_project.num_files = len(data_list)
-                new_project.type = request.POST.get('type')
-                new_project.save()
+                if project_creation_fail:
+                    error_message = "Error! No paired match found for the Following:  " + ", ".join(failed_list) + \
+                                    ", Ensure each pair of files contains *_R1_001.fastq.gz and *_R2_001.fastq.gz"
+                    messages.add_message(request, messages.ERROR, error_message)
+                else:
+                    # Create a Fasta or Fastq Project
+                    new_project = Project(user=username, description=description, organism=organism)
+                    new_project.save()
+                    for obj in data_list:
+                        new_project.files.add(obj)
+                    new_project.num_files = len(data_list)
+                    new_project.type = request.POST.get('type')
+                    new_project.save()
 
-                success_message = description + " created succesully"
-                messages.add_message(request, messages.SUCCESS, success_message)
+                    success_message = description + " created succesully"
+                    messages.add_message(request, messages.SUCCESS, success_message)
 
-                # Send user to the Projects main page
-                indiv_projects = Project.objects.filter(user=username, type='Individual')
-                fastq_projects = Project.objects.filter(user=username, type='fastq')
-                fasta_projects = Project.objects.filter(user=username, type='fasta')
-                return render(request, 'SilentD/data.html', {'indiv_projects': indiv_projects,
-                                                             'fastq_projects': fastq_projects,
-                                                             'fasta_projects': fasta_projects})
-        else:
-            print "No Chosen Items"
+                    # Send user to the Projects main page
+                    indiv_projects = Project.objects.filter(user=username, type='Individual')
+                    fastq_projects = Project.objects.filter(user=username, type='fastq')
+                    fasta_projects = Project.objects.filter(user=username, type='fasta')
+                    return render(request, 'SilentD/data.html', {'indiv_projects': indiv_projects,
+                                                                 'fastq_projects': fastq_projects,
+                                                                 'fasta_projects': fasta_projects})
 
     # Retrieve all uploaded files relating to the user
     documents = Data.objects.filter(user=username).exclude(file__isnull=True).exclude(file="")
@@ -1084,21 +1139,37 @@ def amr(request):
                                                             'armi_misses': armi_misses})
 
             else:
-                with open(path, 'rt') as f:
-                    lines = f.readlines()
-                    keys = ['Strain', 'Gene', 'Query Length', 'Subject Length', 'Alignment Length', 'Matched Bases',
-                            '% Identity']
 
-                    # Parses Blast Output into Datatables compatible dictionary
-                    for line in lines:
-                        line_list = line.split(',')
-                        coverage = (float(line_list[5])/float(line_list[3])*100.0)
-                        line_list.append(str(coverage))
-                        data_list.append(line_list)
+                if "obj" in request.POST:
+                    obj = AMR.objects.get(id=request.POST['obj'])
+                    if obj.type == 'fasta':
+                        with open(path, 'rt') as f:
+                            lines = f.readlines()
+                            keys = ['Strain', 'Gene', 'Query Length', 'Subject Length', 'Alignment Length', 'Matched Bases',
+                                    '% Identity']
 
-                return render(request, 'SilentD/amr.html', {'documents': documents,
-                                                            'results': data_list, 'keys': keys, 'display': True})
+                            # Parses Blast Output into Datatables compatible dictionary
+                            for line in lines:
+                                line_list = line.split(',')
+                                coverage = (float(line_list[5])/float(line_list[3])*100.0)
+                                line_list.append(str(coverage))
+                                data_list.append(line_list)
 
+                        return render(request, 'SilentD/amr.html', {'documents': documents,
+                                                                    'results': data_list, 'keys': keys, 'display': True})
+                    elif obj.type == "fastq":
+                        with open(path, 'rt') as f:
+                            lines = f.readlines()
+                            keys = lines[0].split("\t")
+                            lines.pop(0)
+                            # Parses Blast Output into Datatables compatible dictionary
+                            for line in lines:
+                                line_list = line.split('\t')
+                                data_list.append(line_list)
+
+                        return render(request, 'SilentD/amr.html', {'documents': documents,
+                                                                    'results': data_list, 'keys': keys,
+                                                                    'display': True})
     documents = AMR.objects.filter(user=username)
     return render(request, 'SilentD/amr.html', {'documents': documents })
 

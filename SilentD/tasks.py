@@ -727,6 +727,7 @@ def mmlst_task(self, obj_id):
                 mlst_object.save()
             else:
                 raise ValueError('No Result File Generated')
+
         elif project_obj.type == 'fasta':
                 if organism:
                     call(['python', 'mMLST.py', '-s', working_dir, '-a', mlst_path, '-r', working_dir])

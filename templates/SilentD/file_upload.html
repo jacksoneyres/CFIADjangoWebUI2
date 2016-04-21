@@ -93,6 +93,11 @@
             <p>After successful upload, files are available for view in Create Project->Create New FastA Project</p>
     </div>
 
+        <form id="ProjectForm" action="{% url "create_project" %}" name='FastQForm' method="post" enctype="multipart/form-data" class="form-inline">
+        {% csrf_token %}
+        <input type="hidden" class="form-control" name="project" id="project">
+        <input type="hidden" class="form-control" name="ids" id="ids">
+    </form>
 
     <script>
     // Get the template HTML and remove it from the doumenthe template HTML and remove it from the doument
@@ -158,7 +163,15 @@
 
         // Hide the total progress bar when nothing's uploading anymore
         myDropzone.on("queuecomplete", function(progress) {
-          document.querySelector("#total-progress").style.opacity = "0";
+            var accepted_files = myDropzone.getAcceptedFiles();
+            var arr = [];
+            for (var i = 0; i < accepted_files.length; i++) {
+                arr.push(accepted_files[i].name);
+            }
+            var serializedarr = JSON.stringify(arr);
+            $("#ids").val(serializedarr);
+            document.getElementById("ProjectForm").submit();
+            document.querySelector("#total-progress").style.opacity = "0";
         });
 
         // Setup the buttons for all transfers

@@ -94,6 +94,7 @@
                                         <th>File Names</th>
                                         <th>Jobs</th>
                                         <th>Results</th>
+                                        <th></th>
                                     </tr>
                                     </thead>
 
@@ -179,26 +180,36 @@
                                                             </form>
                                                             &nbsp;
                                                         {% endif %}
-                                                        <!--
-                                            {% if project.geneseekr_results == 'None' %}
-                                                <button type="button" id="GeneSeekR" class="btn btn-xs btn-warning custombutton" disabled>GeneSippR</button>&nbsp;
-                                            {% elif project.geneseekr_results == 'Disabled' %}
-                                                <button type="button" id="GeneSeekR" class="btn btn-xs btn-danger custombutton" disabled>GeneSippR</button>&nbsp;
-                                            {% elif project.geneseekr_results != 'False' %}
-                                                <form role="form" action="{% url "gene_seeker" %}" method="post">
-                                                    {% csrf_token %}
-                                                    <input type="hidden" name="id" value="{{ project.geneseekr_results }}">
-                                                    <button type="submit" id="GeneSeekR" class="btn btn-xs btn-success custombutton">GeneSippR</button>
-                                                </form>
-                                            &nbsp;
-                                            {% endif %}
-
-                                            {% if project.mlst_results == '' %}
-                                                <button type="button" id="MLST" class="btn btn-xs btn-info loading" disabled>MLST</button>&nbsp;
-                                            &nbsp;
-                                            {% endif %}
-                                            -->
+                                                        {% if project.mlst_results %}
+                                                            <form role="form" action="{% url "data" %}" method="post">
+                                                                {% csrf_token %}
+                                                                {% if project.mlst_results == 'Running' %}
+                                                                    <input type="hidden" name="mlst_running" value="{{ project.id }}">
+                                                                    <button type="button" id="mlst" class="btn btn-xs btn-info custombutton loading" disabled>MLST</button>
+                                                                {% elif project.mlst_results == 'Done' %}
+                                                                    <input type="hidden" name="mlst_results" value="{{ project.id }}">
+                                                                    <button type="submit" id="mlst" class="btn btn-xs btn-success custombutton">MLST</button>
+                                                                {% elif project.mlst_results == 'Error'  %}
+                                                                    <input type="hidden" name="mlst_results" value="{{ project.id }}">
+                                                                    <button type="submit" id="mlst" class="btn btn-xs btn-danger custombutton">MLST</button>
+                                                                {% else %}
+                                                                {% endif %}
+                                                            </form>
+                                                            &nbsp;
+                                                        {% endif %}
                                                     </table>
+                                                </td>
+                                                <td>
+                                                    <form style='float: right;' role="form" action="{% url "data" %}" method="post">
+                                                        &nbsp;
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="id" value="{{ project.id }}">
+                                                        <input type="hidden" name="delete" value="{{ project.id }}">
+                                                        <button type="submit" id="submit11"
+                                                                class="btn btn-danger btn-xs">
+                                                            <i class="fa fa-fw fa-trash-o "></i>
+                                                        </button>
+                                                    </form>
                                                 </td>
                                             </tr>
                                         {% endfor %}
@@ -219,6 +230,7 @@
                                         <th>File Names</th>
                                         <th>Jobs</th>
                                         <th>Results</th>
+                                        <th></th>
                                     </tr>
                                     </thead>
 
@@ -228,7 +240,25 @@
                                             <tr>
                                                 <td>{{ project.description }}</td>
                                                 <td>{{ project.date|date:"Y-m-d-P" }}</td>
-                                                <td>{{ project.organism }}</td>
+                                                <td>{% if project.organism %}
+                                                        {{ project.organism }}
+                                                    {% else %}
+                                                        <form id="theForm" action="{% url "data" %}" name='OrganismForm' method="post" enctype="multipart/form-data" class="form-inline">
+                                                            {% csrf_token %}
+                                                            <input type="hidden" name="assign_organism" value="{{ project.id }}">
+                                                            <select title='Organism Species' onchange="this.form.submit()" id="select_organism" name="select_organism" class="form-control">
+                                                                <option disabled selected value="Assign Organism">Assign Organism</option>
+                                                                <option value="Escherichia coli">Escherichia coli</option>
+                                                                <option value="Listeria monocytogenes">Listeria monocytogenes</option>
+                                                                <option value="Salmonella enterica">Salmonella enterica</option>
+                                                                <option value="Vibrio parahaemolyticus">Vibrio parahaemolyticus</option>
+                                                                <option value="Campylobacter jejuni">Campylobacter jejuni</option>
+                                                                <option value="Staphylococcus aureus">Staphylococcus aureus</option>
+                                                                <option value="Metagenome">Metagenome</option>
+                                                                <option value="Other">Other</option>
+                                                            </select>
+                                                        </form>
+                                                    {% endif %}
                                                 <td>{{ project.num_files }}</td>
                                                 <td>{% for file in project.files.all %}
                                                     <a href="{{ file.file.url }}">{{ file.name }}</a><br>
@@ -246,60 +276,53 @@
                                                 </td>
                                                 <td> <!-- Here Lies All The Buttons Responsible for Background Tasks -->
                                                     <table>
-                                                    {% if project.amr_results %}
-                                                        <form role="form" action="{% url "data" %}" method="post">
-                                                            {% csrf_token %}
-                                                            {% if project.amr_results == 'Running' %}
-                                                                <input type="hidden" name="amr_running" value="{{ project.id }}">
-                                                                <button type="button" id="amr" class="btn btn-xs btn-info custombutton loading" disabled>AMR</button>
-                                                            {% elif project.amr_results == 'Done' %}
-                                                                <input type="hidden" name="amr_results" value="{{ project.id }}">
-                                                                <button type="submit" id="amr" class="btn btn-xs btn-success custombutton">AMR</button>
-                                                            {% elif project.amr_results == 'Error'  %}
-                                                                <input type="hidden" name="amr_results" value="{{ project.id }}">
-                                                                <button type="submit" id="amr" class="btn btn-xs btn-danger custombutton">AMR</button>
-                                                            {% else %}
-                                                            {% endif %}
-                                                        </form>
-                                                        &nbsp;
-                                                    {% endif %}
-                                                    {% if project.mlst_results %}
-                                                        <form role="form" action="{% url "data" %}" method="post">
-                                                            {% csrf_token %}
-                                                            {% if project.mlst_results == 'Running' %}
-                                                                <input type="hidden" name="mlst_running" value="{{ project.id }}">
-                                                                <button type="button" id="mlst" class="btn btn-xs btn-info custombutton loading" disabled>MLST</button>
-                                                            {% elif project.mlst_results == 'Done' %}
-                                                                <input type="hidden" name="mlst_results" value="{{ project.id }}">
-                                                                <button type="submit" id="mlst" class="btn btn-xs btn-success custombutton">MLST</button>
-                                                            {% elif project.mlst_results == 'Error'  %}
-                                                                <input type="hidden" name="mlst_results" value="{{ project.id }}">
-                                                                <button type="submit" id="mlst" class="btn btn-xs btn-danger custombutton">MLST</button>
-                                                            {% else %}
-                                                            {% endif %}
-                                                        </form>
-                                                        &nbsp;
-                                                    {% endif %}
-                                                        <!--
-                                            {% if project.geneseekr_results == 'None' %}
-                                                <button type="button" id="GeneSeekR" class="btn btn-xs btn-warning custombutton" disabled>GeneSippR</button>&nbsp;
-                                            {% elif project.geneseekr_results == 'Disabled' %}
-                                                <button type="button" id="GeneSeekR" class="btn btn-xs btn-danger custombutton" disabled>GeneSippR</button>&nbsp;
-                                            {% elif project.geneseekr_results != 'False' %}
-                                                <form role="form" action="{% url "gene_seeker" %}" method="post">
-                                                    {% csrf_token %}
-                                                    <input type="hidden" name="id" value="{{ project.geneseekr_results }}">
-                                                    <button type="submit" id="GeneSeekR" class="btn btn-xs btn-success custombutton">GeneSippR</button>
-                                                </form>
-                                            &nbsp;
-                                            {% endif %}
-
-                                            {% if project.mlst_results == '' %}
-                                                <button type="button" id="MLST" class="btn btn-xs btn-info loading" disabled>MLST</button>&nbsp;
-                                            &nbsp;
-                                            {% endif %}
-                                            -->
+                                                        {% if project.amr_results %}
+                                                            <form role="form" action="{% url "data" %}" method="post">
+                                                                {% csrf_token %}
+                                                                {% if project.amr_results == 'Running' %}
+                                                                    <input type="hidden" name="amr_running" value="{{ project.id }}">
+                                                                    <button type="button" id="amr" class="btn btn-xs btn-info custombutton loading" disabled>AMR</button>
+                                                                {% elif project.amr_results == 'Done' %}
+                                                                    <input type="hidden" name="amr_results" value="{{ project.id }}">
+                                                                    <button type="submit" id="amr" class="btn btn-xs btn-success custombutton">AMR</button>
+                                                                {% elif project.amr_results == 'Error'  %}
+                                                                    <input type="hidden" name="amr_results" value="{{ project.id }}">
+                                                                    <button type="submit" id="amr" class="btn btn-xs btn-danger custombutton">AMR</button>
+                                                                {% else %}
+                                                                {% endif %}
+                                                            </form>
+                                                            &nbsp;
+                                                        {% endif %}
+                                                        {% if project.mlst_results %}
+                                                            <form role="form" action="{% url "data" %}" method="post">
+                                                                {% csrf_token %}
+                                                                {% if project.mlst_results == 'Running' %}
+                                                                    <input type="hidden" name="mlst_running" value="{{ project.id }}">
+                                                                    <button type="button" id="mlst" class="btn btn-xs btn-info custombutton loading" disabled>MLST</button>
+                                                                {% elif project.mlst_results == 'Done' %}
+                                                                    <input type="hidden" name="mlst_results" value="{{ project.id }}">
+                                                                    <button type="submit" id="mlst" class="btn btn-xs btn-success custombutton">MLST</button>
+                                                                {% elif project.mlst_results == 'Error'  %}
+                                                                    <input type="hidden" name="mlst_results" value="{{ project.id }}">
+                                                                    <button type="submit" id="mlst" class="btn btn-xs btn-danger custombutton">MLST</button>
+                                                                {% else %}
+                                                                {% endif %}
+                                                            </form>
+                                                            &nbsp;
+                                                        {% endif %}
                                                     </table>
+                                                </td>
+                                                <td>
+                                                    <form style='float: right;' role="form" action="{% url "data" %}" method="post">
+                                                        &nbsp;
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="id" value="{{ project.id }}">
+                                                        <input type="hidden" name="delete" value="{{ project.id }}">
+                                                        <button type="submit" id="submit11"
+                                                                class="btn btn-danger btn-xs">
+                                                            <i class="fa fa-fw fa-trash-o "></i>
+                                                        </button>
+                                                    </form>
                                                 </td>
                                             </tr>
                                         {% endfor %}
