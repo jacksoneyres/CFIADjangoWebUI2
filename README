@@ -1,11 +1,11 @@
-Requirements
+Requires POSTGRES, RabbitMQ, Docker
 
-python manage.py runserver 0.0.0.0:8000
-python 
-**Celery**
-Requires RabbitMQ
-sudo apt-get install rabbitmq-server
+SETUP
 
-From Working Dir
-python manage.py celery worker --loglevel=info
+docker run --name postgres --restart=always -v /home/eyresj/Postgres_Test:/var/lib/postgresql/data/pgdata -e POSTGRES_PASSWORD=biohazard -e POSTGRES_USER=admin -e POSTGRES_DB=mydb -d postgres
+
+docker run -d --restart=always --hostname rabbit --name rabbit rabbitmq:3
+
+docker run -v /mnt/portal/genomics_portal:/app/documents -p 0.0.0.0:8000:8000 --link rabbit:rabbit --link postgres:db portal
+
 
