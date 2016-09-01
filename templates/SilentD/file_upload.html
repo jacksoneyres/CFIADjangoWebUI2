@@ -108,8 +108,8 @@
 
         var myDropzone = new Dropzone("div#dragdrop", { // Make the whole body a dropzone
           url: "{% url 'file_upload' %}", // Set the url
-          maxFilesize: 25000,
-          acceptedFiles: ".fastq.gz, .fasta, .fa, .xml, .csv",
+          maxFilesize: 250000000,
+          acceptedFiles: ".fastq.gz, .fasta, .fa, .xml, .csv, .tar.gz",
           accept: function(file, done) {
               var found = 0;
               if (file.name.indexOf('.fa') != -1) {
@@ -133,6 +133,9 @@
                   else {
                       done();
                   }
+              }
+              else {
+                  done();
               }
           },
           thumbnailWidth: 80,

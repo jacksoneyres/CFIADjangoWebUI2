@@ -1,8 +1,6 @@
 # Python Library
 from __future__ import absolute_import
 from celery import Celery
-from celery import group
-from time import sleep
 from subprocess import call
 import csv
 import json
@@ -10,10 +8,7 @@ import zipfile
 import shutil
 import os
 import glob
-import random
 # Django Model Imports
-from SilentD.models import User
-from SilentD.models import Profile
 from SilentD.models import Data
 from SilentD.models import PrimerV
 from SilentD.models import GeneS
@@ -37,7 +32,7 @@ DOCKER_REGISTRY = "192.168.1.5:5000"
 # General Settings
 app = Celery('tasks',
              backend='djcelery.backends.database.DatabaseBackend',
-             broker='amqp://guest:guest@localhost:5672//')
+             broker='amqp://guest:guest@rabbit:5672//')
 
 
 NAS_MOUNT_VOLUME = "/home/ubuntu/nas0/Genomics_Portal/documents_test/"
@@ -461,8 +456,15 @@ def gene_seeker_task(self, obj_id):
 
         print 'Running Gene Seeker SRST2'
         try:
-            call(['docker', 'run', '-v', os.path.abspath(working_dir)+':/app/documents',
-                  '-e', 'INPUT=app/documents', '-e', 'VAR1=GeneSeekR', '-e', 'VAR2='+cutoff, 'srst2'])
+            file_path = os.path.join(working_dir, '*.gz')
+            file_path = os.path.abspath(file_path)
+            fasta_path = os.path.join(working_dir, '*.fasta')
+            fasta_path = os.path.abspath(fasta_path)
+            print "New Subprocess32", file_path, fasta_path
+            #subprocess32.call(['srst2', '--input_pe', file_path, '--gene_db', fasta_path, '--max_divergence', cutoff, '--output', 'GeneSeekR'], shell=True)
+            os.system('srst2 --input_pe %s --gene_db %s --max_divergence %s --output GeneSeekR' % (file_path, fasta_path, cutoff))
+            #call(['docker', 'run', '-v', os.path.abspath(working_dir)+':/app/documents',
+            #      '-e', 'INPUT=app/documents', '-e', 'VAR1=GeneSeekR', '-e', 'VAR2='+cutoff, 'srst2'])
 
             print "Saving Results Now"
             # Assign file to database entry for results if it exists, and is not empty
@@ -713,7 +715,7 @@ def mmlst_task(self, obj_id):
 
             # Folders here must match project possible formats
             source_dir = 'documents/Targets/MLST/%s/' % organism
-            #source_dir = 'documents/Targets/rMLST/'
+            # source_dir = 'documents/Targets/rMLST/'
             for filename in glob.glob(os.path.join(source_dir, '*.*')):
                 shutil.copy(filename, working_dir)
             call(['docker', 'run', '-v', os.path.abspath(working_dir)+':/app/documents',

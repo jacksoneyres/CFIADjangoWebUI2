@@ -249,7 +249,12 @@ def file_upload(request):
                 # Create a MiSeq Task and Begin Automatic Analysis here
                 # miseq_task.delay(newdoc.id, "Create")
             else:
-                pass
+                newdoc = Data(user=username, type='Random')
+                newdoc.save()
+                newdoc.file = request.FILES['file']
+                newdoc.save()
+                newdoc.name = newdoc.file.name.split('/')[-1]
+                newdoc.save()
     return render(request, 'SilentD/file_upload.html', {})
 
 
