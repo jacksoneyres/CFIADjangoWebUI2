@@ -403,7 +403,7 @@
                                         y: {{ value|length}},
                                         color: "{% cycle '#8B008B' '#4B0082' '#483D8B' '#00008B' '#27408B' '#6495ED' '#104E8B' '#36648B' '#00688B' '#33A1C9' '#00868B' '#03A89E' '#00C78C' '#008B45' '#00CD00' '#698B22' as cols %}",
                                         drilldown: {
-                                            name: 'Antibiotics',
+                                            name: 'Genes',
                                             categories: [{% for k, v in value.items %}'{{ k }}',{% endfor %}],
                                             data: [{% for k,v in value.items %}{{ v }},{% endfor %}]
                                         }

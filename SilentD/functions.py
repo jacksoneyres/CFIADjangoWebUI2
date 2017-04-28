@@ -57,13 +57,6 @@ def translate_aa(filename):
         return translate(record.seq)
 
 
-def calculate_gc(filename):
-    # newest = max(glob.iglob('documents/fasta/*.fasta'), key=os.path.getctime)
-    handle = open(filename, 'rU')
-    for record in SeqIO.parse(handle, "fasta"):
-        return GC(record.seq)
-
-
 def primer_validator_function(forward, reverse, target, mism):
     print "Running ePCR"
 

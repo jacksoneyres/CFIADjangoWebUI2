@@ -1,11 +1,19 @@
-Requires POSTGRES, RabbitMQ, Docker
+CFIA Genomics Portal
+Author: Jackson Eyres
 
 SETUP
 
-docker run --name postgres --restart=always -v /home/eyresj/Postgres_Test:/var/lib/postgresql/data/pgdata -e POSTGRES_PASSWORD=biohazard -e POSTGRES_USER=admin -e POSTGRES_DB=mydb -d postgres
+Requires Docker
+Tested on Ubuntu 16.04
 
-docker run -d --restart=always --hostname rabbit --name rabbit rabbitmq:3
+SETUP
+Database folder is required somewhere on host. For example, ~/pgdata is fine
+Mount the Portal Nas with all the databases onto host under /mnt/portal
+Append fstab with
+192.168.1.23:/mnt/portal	/mnt/portal	nfs4	defaults,nolock,timeo=10,,retrans=3,user 0	0
 
-docker run -v /mnt/portal/genomics_portal:/app/documents -p 0.0.0.0:8000:8000 --link rabbit:rabbit --link postgres:db portal
+sudo docker run --name postgres -e POSTGRES_PASSWORD=biohazard -e POSTGRES_USER=admin -e POSTGRES_DB=mydb -e PGDATA=/var/lib/postgresql/data/pgdata -v ~/pgdata:/var/lib/postgresql/data/pgdata --restart=always -d postgres
+sudo docker run -d --restart=always --hostname rabbit --name rabbit rabbitmq:3
+docker run -v /mnt/portal/genomics_portal:/app/documents -p 0.0.0.0:8000:8000 --link rabbit:rabbit --link postgres:postgres portal_1
 
 
